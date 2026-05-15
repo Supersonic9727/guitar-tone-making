@@ -11,9 +11,9 @@
   <style>
     * { box-sizing: border-box; }
     body { margin: 0; background: #0a0a0a; }
-    ::-webkit-scrollbar { width: 4px; height: 4px; }
-    ::-webkit-scrollbar-track { background: #0a0a0a; }
-    ::-webkit-scrollbar-thumb { background: #1f2937; border-radius: 2px; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #111; }
+    ::-webkit-scrollbar-thumb { background: #3a3a3a; border-radius: 3px; }
   </style>
 </head>
 <body>
@@ -459,7 +459,7 @@ function InteractiveKnob({ label, value, color, onChange, size='md' }) {
     <div className="flex flex-col items-center gap-1.5 select-none">
       <div className="relative cursor-ns-resize" onMouseDown={onMouseDown}>
         <svg width={dim} height={dim} viewBox={`0 0 ${dim} ${dim}`}>
-          {ticks.map((t,i) => <line key={i} x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2} stroke={t.lit?color:'#1f2937'} strokeWidth="1.5" strokeLinecap="round"/>)}
+          {ticks.map((t,i) => <line key={i} x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2} stroke={t.lit?color:'#3a3a3a'} strokeWidth="1.5" strokeLinecap="round"/>)}
           <path d={arcPath(START,START+ARC)} fill="none" stroke="#111827" strokeWidth="3" strokeLinecap="round"/>
           {value>0 && <path d={arcPath(START,valDeg)} fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" style={{filter:`drop-shadow(0 0 3px ${color}88)`}}/>}
           <circle cx={Cx} cy={Cx} r={knobR+2} fill="#161616" stroke="#2a2a2a" strokeWidth="1"/>
@@ -468,7 +468,7 @@ function InteractiveKnob({ label, value, color, onChange, size='md' }) {
           <defs><radialGradient id="kg" cx="40%" cy="35%" r="65%"><stop offset="0%" stopColor="#2a2a2a"/><stop offset="100%" stopColor="#0d0d0d"/></radialGradient></defs>
         </svg>
       </div>
-      <span className="text-[8px] uppercase tracking-widest leading-none" style={{color:color+'aa'}}>{label}</span>
+      <span className="text-xs uppercase tracking-widest leading-none font-bold" style={{color:color}}>{label}</span>
       {editing ? (
         <input ref={inputRef} className="w-10 text-center text-xs font-mono rounded px-1 py-0.5 border outline-none"
           style={{background:'#0a0a0a',borderColor:color,color}}
@@ -496,55 +496,55 @@ function SlideInPanel({ block, dbEntry, color, onClose, onParamChange, onToggleA
                 <div className="flex items-center gap-2">
                   <div className="w-1.5 h-8 rounded-full" style={{background:color.border}}/>
                   <div>
-                    <div className="text-[8px] uppercase tracking-[0.25em]" style={{color:color.text+'80'}}>{FX_LABEL[block.cat]??block.cat}</div>
+                    <div className="text-xs uppercase tracking-[0.25em]" style={{color:color.text+'80'}}>{FX_LABEL[block.cat]??block.cat}</div>
                     <div className="text-base font-black text-white leading-tight">{block.model}</div>
                   </div>
                 </div>
-                <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg border border-[#1e1e1e] text-gray-600 hover:text-gray-300 transition-colors"><X size={14}/></button>
+                <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg border border-[#1e1e1e] text-gray-400 hover:text-gray-300 transition-colors"><X size={14}/></button>
               </div>
               {dbEntry && (
-                <div className="rounded-lg px-3 py-2 mb-3 text-[9px]" style={{background:color.bg,border:`1px solid ${color.border}25`}}>
+                <div className="rounded-lg px-3 py-2 mb-3 text-xs" style={{background:color.bg,border:`1px solid ${color.border}25`}}>
                   <span style={{color:color.text+'80'}}>BASED ON  </span>
                   <span className="font-bold" style={{color:color.text}}>{dbEntry.base}</span>
-                  <div className="text-gray-600 mt-0.5">{dbEntry.desc}</div>
+                  <div className="text-gray-400 mt-0.5">{dbEntry.desc}</div>
                 </div>
               )}
               <div className="flex items-center gap-2">
-                <button onClick={onToggleActive} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border font-bold text-[10px] uppercase tracking-wider transition-all"
+                <button onClick={onToggleActive} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border font-bold text-[13px] uppercase tracking-wider transition-all"
                   style={block.active?{background:`${color.border}18`,borderColor:`${color.border}50`,color:color.border}:{background:'#111',borderColor:'#222',color:'#4b5563'}}>
                   <Power size={11}/>{block.active?'ACTIVE':'BYPASS'}
                 </button>
-                <button onClick={onReset} className="w-9 h-9 flex items-center justify-center rounded-lg border border-[#1e1e1e] text-gray-700 hover:text-gray-400 transition-colors"><RotateCcw size={13}/></button>
+                <button onClick={onReset} className="w-9 h-9 flex items-center justify-center rounded-lg border border-[#1e1e1e] text-gray-400 hover:text-gray-400 transition-colors"><RotateCcw size={13}/></button>
               </div>
             </div>
             <div className="flex-1 overflow-y-auto px-5 py-5">
-              <div className="text-[8px] text-gray-700 uppercase tracking-widest mb-4 flex items-center gap-1.5"><Sliders size={9}/> PARAMETERS</div>
+              <div className="text-xs text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-1.5"><Sliders size={9}/> PARAMETERS</div>
               <div className="grid grid-cols-3 gap-x-4 gap-y-6">
                 {Object.entries(block.params).map(([key,val]) => (
                   <div key={key} className="flex flex-col items-center gap-1">
                     <InteractiveKnob label={key} value={val} color={color.border} size="lg" onChange={v=>onParamChange(key,v)}/>
                     <div className="flex items-center gap-1 mt-0.5">
-                      <button onClick={()=>onParamChange(key,Math.max(0,val-1))} className="w-5 h-5 flex items-center justify-center rounded border border-[#1e1e1e] text-gray-600 hover:text-gray-300 transition-colors"><Minus size={9}/></button>
-                      <button onClick={()=>onParamChange(key,Math.min(100,val+1))} className="w-5 h-5 flex items-center justify-center rounded border border-[#1e1e1e] text-gray-600 hover:text-gray-300 transition-colors"><Plus size={9}/></button>
+                      <button onClick={()=>onParamChange(key,Math.max(0,val-1))} className="w-5 h-5 flex items-center justify-center rounded border border-[#1e1e1e] text-gray-400 hover:text-gray-300 transition-colors"><Minus size={9}/></button>
+                      <button onClick={()=>onParamChange(key,Math.min(100,val+1))} className="w-5 h-5 flex items-center justify-center rounded border border-[#1e1e1e] text-gray-400 hover:text-gray-300 transition-colors"><Plus size={9}/></button>
                     </div>
                   </div>
                 ))}
               </div>
               <div className="mt-6 rounded-xl p-4 border" style={{background:'#050505',borderColor:'#151515'}}>
-                <div className="text-[8px] text-gray-700 uppercase tracking-widest mb-3 flex items-center gap-1.5"><Activity size={9}/> LEVEL</div>
+                <div className="text-xs text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-1.5"><Activity size={9}/> LEVEL</div>
                 <div className="space-y-2">
                   {Object.entries(block.params).map(([k,v]) => (
                     <div key={k} className="flex items-center gap-3">
-                      <span className="text-[8px] text-gray-600 uppercase w-14 text-right flex-shrink-0">{k}</span>
-                      <div className="flex-1 h-1.5 bg-[#0d0d0d] rounded-full overflow-hidden">
+                      <span className="text-xs text-gray-400 uppercase w-14 text-right flex-shrink-0">{k}</span>
+                      <div className="flex-1 h-1.5 bg-[#161616] rounded-full overflow-hidden">
                         <div className="h-full rounded-full transition-all duration-200" style={{width:`${v}%`,background:`linear-gradient(90deg,${color.border}55,${color.border})`}}/>
                       </div>
-                      <span className="text-[8px] font-mono w-6 text-right flex-shrink-0" style={{color:color.text}}>{v}</span>
+                      <span className="text-xs font-mono w-6 text-right flex-shrink-0" style={{color:color.text}}>{v}</span>
                     </div>
                   ))}
                 </div>
               </div>
-              <div className="mt-4 text-[8px] text-gray-800 text-center space-y-0.5">
+              <div className="mt-4 text-xs text-gray-500 text-center space-y-0.5">
                 <div>↕ 드래그로 값 조절</div><div>더블클릭 → 숫자 직접 입력</div><div>+/- 버튼 → 1단계 미세 조정</div>
               </div>
             </div>
@@ -562,11 +562,11 @@ function ChainBlock({ block, isSelected, onClick }) {
       <button onClick={onClick}
         style={{background:isSelected?col.bg:'#0d0d0d',borderColor:isSelected?col.border:`${col.border}30`,boxShadow:isSelected?`0 0 12px ${col.border}40`:'none',opacity:block.active?1:0.35,transform:isSelected?'scale(1.07)':'scale(1)'}}
         className="relative min-w-[72px] p-2.5 rounded-xl border-2 transition-all duration-150 text-center">
-        <div className="text-[7px] font-black tracking-widest mb-1 uppercase" style={{color:col.text}}>{FX_LABEL[block.cat]??block.cat}</div>
+        <div className="text-sm font-black tracking-widest mb-1 uppercase" style={{color:col.text}}>{FX_LABEL[block.cat]??block.cat}</div>
         <Power size={10} className="mx-auto mb-1" style={{color:block.active?col.border:'#374151'}}/>
-        <div className="text-[7px] truncate" style={{color:col.text+'aa'}}>{block.model}</div>
+        <div className="text-sm truncate" style={{color:col.text+'aa'}}>{block.model}</div>
       </button>
-      <ChevronRight size={10} className="text-gray-800"/>
+      <ChevronRight size={10} className="text-gray-500"/>
     </div>
   );
 }
@@ -587,35 +587,35 @@ function ModelBrowser({ onClose }) {
   }, [q]);
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="w-full max-w-2xl max-h-[80vh] flex flex-col rounded-2xl border border-[#222] overflow-hidden" style={{background:'#080808'}}>
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#181818]">
+      <div className="w-full max-w-2xl max-h-[80vh] flex flex-col rounded-2xl border border-[#404040] overflow-hidden" style={{background:'#080808'}}>
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#303030]">
           <div className="flex items-center gap-2">
             <BookOpen size={14} className="text-blue-400"/>
             <span className="text-sm font-black text-white">GP-200JR Model Browser</span>
-            <span className="text-[8px] text-gray-600 border border-[#222] px-1.5 py-0.5 rounded">Firmware V1.8.0</span>
+            <span className="text-xs text-gray-400 border border-[#404040] px-1.5 py-0.5 rounded">Firmware V1.8.0</span>
           </div>
-          <button onClick={onClose} className="text-gray-600 hover:text-gray-400"><X size={16}/></button>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-400"><X size={16}/></button>
         </div>
-        <div className="px-5 py-3 border-b border-[#141414]">
+        <div className="px-5 py-3 border-b border-[#2a2a2a]">
           <div className="relative">
-            <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600"/>
-            <input autoFocus className="w-full bg-[#0d0d0d] border border-[#1c1c1c] rounded-xl pl-8 pr-3 py-2.5 text-xs text-gray-300 placeholder-gray-700 focus:outline-none focus:border-blue-600"
+            <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/>
+            <input autoFocus className="w-full bg-[#161616] border border-[#383838] rounded-xl pl-8 pr-3 py-2.5 text-xs text-gray-300 placeholder-gray-500 focus:outline-none focus:border-blue-600"
               placeholder="모델명 / 원본 기어명 / 사운드 특징 검색..." value={q} onChange={e=>setQ(e.target.value)}/>
           </div>
         </div>
         <div className="flex-1 overflow-y-auto px-5 py-3">
           {results ? (
-            results.length===0 ? <div className="text-center text-gray-700 text-sm py-8">검색 결과가 없습니다</div> : (
+            results.length===0 ? <div className="text-center text-gray-400 text-sm py-8">검색 결과가 없습니다</div> : (
               <div className="space-y-1.5">
                 {results.map((m,i) => (
-                  <div key={i} className="flex items-start gap-3 p-2.5 rounded-xl border hover:bg-[#0f0f0f]" style={{borderColor:`${m.color.border}20`}}>
+                  <div key={i} className="flex items-start gap-3 p-2.5 rounded-xl border hover:bg-[#181818]" style={{borderColor:`${m.color.border}20`}}>
                     <div className="flex-shrink-0 px-2 py-1 rounded-lg text-center min-w-[52px]" style={{background:m.color.bg,border:`1px solid ${m.color.border}44`}}>
-                      <div className="text-[7px] uppercase tracking-wider" style={{color:m.color.text}}>{m.label}</div>
-                      <div className="text-[9px] font-bold mt-0.5" style={{color:m.color.text}}>{m.name}</div>
+                      <div className="text-sm uppercase tracking-wider" style={{color:m.color.text}}>{m.label}</div>
+                      <div className="text-xs font-bold mt-0.5" style={{color:m.color.text}}>{m.name}</div>
                     </div>
                     <div className="min-w-0">
-                      <div className="text-[10px] text-gray-400 font-mono">{m.base}</div>
-                      <div className="text-[9px] text-gray-600 mt-0.5">{m.desc}</div>
+                      <div className="text-[13px] text-gray-400 font-mono">{m.base}</div>
+                      <div className="text-xs text-gray-400 mt-0.5">{m.desc}</div>
                     </div>
                   </div>
                 ))}
@@ -624,21 +624,21 @@ function ModelBrowser({ onClose }) {
           ) : (
             <div className="space-y-1">
               {Object.entries(MODEL_DB).map(([cat,data]) => (
-                <div key={cat} className="rounded-xl overflow-hidden border border-[#141414]">
-                  <button onClick={()=>setOpenCat(openCat===cat?null:cat)} className="w-full flex items-center justify-between px-3 py-2 hover:bg-[#0f0f0f]">
+                <div key={cat} className="rounded-xl overflow-hidden border border-[#2a2a2a]">
+                  <button onClick={()=>setOpenCat(openCat===cat?null:cat)} className="w-full flex items-center justify-between px-3 py-2 hover:bg-[#181818]">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full" style={{background:data.color.border}}/>
-                      <span className="text-[10px] font-bold text-gray-300">{data.label}</span>
-                      <span className="text-[8px] text-gray-700">{data.models.length} models</span>
+                      <span className="text-[13px] font-bold text-gray-300">{data.label}</span>
+                      <span className="text-xs text-gray-400">{data.models.length} models</span>
                     </div>
-                    <ChevronDown size={12} className="text-gray-700" style={{transform:openCat===cat?'rotate(180deg)':'rotate(0deg)'}}/>
+                    <ChevronDown size={12} className="text-gray-400" style={{transform:openCat===cat?'rotate(180deg)':'rotate(0deg)'}}/>
                   </button>
                   {openCat===cat && (
-                    <div className="border-t border-[#141414] divide-y divide-[#0f0f0f]">
+                    <div className="border-t border-[#2a2a2a] divide-y divide-[#2a2a2a]">
                       {data.models.map(m => (
                         <div key={m.id} className="flex items-start gap-3 px-3 py-2 hover:bg-[#0a0a0a]">
-                          <span className="text-[9px] font-bold w-28 flex-shrink-0" style={{color:data.color.text}}>{m.name}</span>
-                          <span className="text-[8px] text-gray-600 min-w-0"><span className="text-gray-500">{m.base}</span>{' — '}{m.desc}</span>
+                          <span className="text-xs font-bold w-28 flex-shrink-0" style={{color:data.color.text}}>{m.name}</span>
+                          <span className="text-xs text-gray-400 min-w-0"><span className="text-gray-500">{m.base}</span>{' — '}{m.desc}</span>
                         </div>
                       ))}
                     </div>
@@ -702,30 +702,30 @@ function ExportModal({ presets, active, onClose }) {
   };
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className="w-full max-w-lg flex flex-col rounded-2xl border border-[#222] overflow-hidden" style={{background:'#080808',maxHeight:'90vh'}}>
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#181818]">
+      <div className="w-full max-w-lg flex flex-col rounded-2xl border border-[#404040] overflow-hidden" style={{background:'#080808',maxHeight:'90vh'}}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#303030]">
           <div className="flex items-center gap-2.5">
             <div className="bg-blue-600 p-1.5 rounded-lg"><Download size={13} className="text-white"/></div>
-            <div><div className="text-sm font-black text-white">데이터 내보내기</div><div className="text-[8px] text-gray-600 uppercase tracking-widest mt-0.5">{DEVICE} · {FIRMWARE}</div></div>
+            <div><div className="text-sm font-black text-white">데이터 내보내기</div><div className="text-xs text-gray-400 uppercase tracking-widest mt-0.5">{DEVICE} · {FIRMWARE}</div></div>
           </div>
-          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg border border-[#222] text-gray-600 hover:text-gray-300"><X size={13}/></button>
+          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg border border-[#404040] text-gray-400 hover:text-gray-300"><X size={13}/></button>
         </div>
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
-          <div className="text-[8px] text-gray-700 uppercase tracking-widest mb-1">내보내기 형식 선택</div>
+          <div className="text-xs text-gray-400 uppercase tracking-widest mb-1">내보내기 형식 선택</div>
           {MODES.map(m => (
             <button key={m.id} onClick={()=>{setMode(m.id);setPreview(false);}} className="w-full flex items-start gap-3 p-3.5 rounded-xl border text-left transition-all"
               style={mode===m.id?{background:'#0d1f3c',borderColor:'#3b82f6'}:{background:'#0d0d0d',borderColor:'#1a1a1a'}}>
               <span className="text-xl flex-shrink-0">{m.icon}</span>
-              <div><div className={`text-xs font-bold ${mode===m.id?'text-blue-400':'text-gray-300'}`}>{m.title}<span className="ml-2 font-mono text-[8px] opacity-60">{m.ext}</span></div><div className="text-[9px] text-gray-600 mt-0.5">{m.desc}</div></div>
+              <div><div className={`text-xs font-bold ${mode===m.id?'text-blue-400':'text-gray-300'}`}>{m.title}<span className="ml-2 font-mono text-xs opacity-60">{m.ext}</span></div><div className="text-xs text-gray-400 mt-0.5">{m.desc}</div></div>
             </button>
           ))}
-          <button onClick={()=>setPreview(v=>!v)} className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-[#1a1a1a] text-[10px] text-gray-600 hover:text-gray-400">
+          <button onClick={()=>setPreview(v=>!v)} className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-[#383838] text-[13px] text-gray-400 hover:text-gray-400">
             <span>파일 미리보기</span><ChevronDown size={12} style={{transform:preview?'rotate(180deg)':'rotate(0deg)'}}/>
           </button>
-          {preview && <pre className="text-[8px] text-gray-500 font-mono rounded-xl border border-[#141414] p-3 overflow-auto" style={{background:'#040404',maxHeight:'200px',whiteSpace:'pre-wrap',wordBreak:'break-all'}}>{previewContent.slice(0,2000)}{previewContent.length>2000?'\n… (이하 생략)':''}</pre>}
+          {preview && <pre className="text-xs text-gray-500 font-mono rounded-xl border border-[#2a2a2a] p-3 overflow-auto" style={{background:'#040404',maxHeight:'200px',whiteSpace:'pre-wrap',wordBreak:'break-all'}}>{previewContent.slice(0,2000)}{previewContent.length>2000?'\n… (이하 생략)':''}</pre>}
         </div>
-        <div className="flex items-center gap-3 px-5 py-4 border-t border-[#181818]">
-          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-[#222] text-gray-600 hover:text-gray-300 text-xs font-bold">취소</button>
+        <div className="flex items-center gap-3 px-5 py-4 border-t border-[#303030]">
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-[#404040] text-gray-400 hover:text-gray-300 text-xs font-bold">취소</button>
           <button onClick={handleDownload} disabled={done} className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-black"
             style={done?{background:'#14532d',color:'#4ade80',border:'1px solid #22c55e44'}:{background:'#2563eb',color:'white'}}>
             {done?<>✓ 다운로드 완료</>:<><Download size={13}/> 다운로드</>}
@@ -782,27 +782,27 @@ function ToneWizardModal({ onClose, onSave }) {
   const ChoiceRow=({items,active,onSelect,color='#3b82f6'})=>(
     <div className="flex gap-1.5 flex-wrap">
       {items.map((item,i)=>(
-        <button key={i} onClick={()=>onSelect(i)} className="flex-1 min-w-[70px] py-2 px-1 rounded-xl border text-[10px] font-bold transition-all text-center"
+        <button key={i} onClick={()=>onSelect(i)} className="flex-1 min-w-[70px] py-2 px-1 rounded-xl border text-[13px] font-bold transition-all text-center"
           style={active===i?{background:`${color}18`,borderColor:color,color}:{background:'#0d0d0d',borderColor:'#1a1a1a',color:'#4b5563'}}>{item}</button>
       ))}
     </div>
   );
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
-      <div className="w-full max-w-lg flex flex-col rounded-2xl border border-[#222] overflow-hidden" style={{background:'#080808',maxHeight:'92vh'}}>
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#181818]">
+      <div className="w-full max-w-lg flex flex-col rounded-2xl border border-[#404040] overflow-hidden" style={{background:'#080808',maxHeight:'92vh'}}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#303030]">
           <div className="flex items-center gap-2.5">
             <div className="bg-purple-600 p-1.5 rounded-lg"><Sliders size={14} className="text-white"/></div>
-            <div><div className="text-sm font-black text-white">Tone Wizard</div><div className="text-[8px] text-gray-600 mt-0.5">API 불필요 · 파라미터 기반 GP-200JR 자동 생성</div></div>
+            <div><div className="text-sm font-black text-white">Tone Wizard</div><div className="text-xs text-gray-400 mt-0.5">API 불필요 · 파라미터 기반 GP-200JR 자동 생성</div></div>
           </div>
-          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg border border-[#222] text-gray-600 hover:text-gray-300"><X size={13}/></button>
+          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg border border-[#404040] text-gray-400 hover:text-gray-300"><X size={13}/></button>
         </div>
-        <div className="flex items-center px-5 py-3 border-b border-[#141414] gap-1">
+        <div className="flex items-center px-5 py-3 border-b border-[#2a2a2a] gap-1">
           {STEPS.map((s,i)=>(
             <React.Fragment key={i}>
               <div className="flex items-center gap-1.5">
-                <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black ${i<step?'bg-purple-600 text-white':i===step?'bg-purple-600/20 border border-purple-500 text-purple-400':'bg-[#111] border border-[#222] text-gray-700'}`}>{i<step?'✓':i+1}</div>
-                <span className={`text-[9px] font-bold ${i===step?'text-purple-400':'text-gray-700'}`}>{s}</span>
+                <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-black ${i<step?'bg-purple-600 text-white':i===step?'bg-purple-600/20 border border-purple-500 text-purple-400':'bg-[#111] border border-[#404040] text-gray-400'}`}>{i<step?'✓':i+1}</div>
+                <span className={`text-xs font-bold ${i===step?'text-purple-400':'text-gray-400'}`}>{s}</span>
               </div>
               {i<STEPS.length-1 && <div className="flex-1 h-px bg-[#1a1a1a] mx-1"/>}
             </React.Fragment>
@@ -813,19 +813,19 @@ function ToneWizardModal({ onClose, onSave }) {
             <>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[8px] text-gray-600 uppercase tracking-widest block mb-1.5">아티스트 (선택)</label>
-                  <input className="w-full bg-[#0d0d0d] border border-[#1c1c1c] rounded-xl px-3 py-2.5 text-xs text-gray-300 placeholder-gray-700 focus:outline-none focus:border-purple-500" placeholder="예: Vaundy" value={artist} onChange={e=>setArtist(e.target.value)}/>
+                  <label className="text-xs text-gray-400 uppercase tracking-widest block mb-1.5">아티스트 (선택)</label>
+                  <input className="w-full bg-[#161616] border border-[#383838] rounded-xl px-3 py-2.5 text-xs text-gray-300 placeholder-gray-500 focus:outline-none focus:border-purple-500" placeholder="예: Vaundy" value={artist} onChange={e=>setArtist(e.target.value)}/>
                 </div>
                 <div>
-                  <label className="text-[8px] text-gray-600 uppercase tracking-widest block mb-1.5">곡 제목 (선택)</label>
-                  <input className="w-full bg-[#0d0d0d] border border-[#1c1c1c] rounded-xl px-3 py-2.5 text-xs text-gray-300 placeholder-gray-700 focus:outline-none focus:border-purple-500" placeholder="예: Odoru Popeye" value={song} onChange={e=>setSong(e.target.value)}/>
+                  <label className="text-xs text-gray-400 uppercase tracking-widest block mb-1.5">곡 제목 (선택)</label>
+                  <input className="w-full bg-[#161616] border border-[#383838] rounded-xl px-3 py-2.5 text-xs text-gray-300 placeholder-gray-500 focus:outline-none focus:border-purple-500" placeholder="예: Odoru Popeye" value={song} onChange={e=>setSong(e.target.value)}/>
                 </div>
               </div>
               <div>
-                <label className="text-[8px] text-gray-600 uppercase tracking-widest block mb-2">장르 (복수 선택 가능)</label>
+                <label className="text-xs text-gray-400 uppercase tracking-widest block mb-2">장르 (복수 선택 가능)</label>
                 <div className="flex flex-wrap gap-1.5">
                   {GENRE_LIST.map(g=>(
-                    <button key={g} onClick={()=>toggleGenre(g)} className="px-2.5 py-1.5 rounded-lg border text-[9px] font-bold transition-all"
+                    <button key={g} onClick={()=>toggleGenre(g)} className="px-2.5 py-1.5 rounded-lg border text-xs font-bold transition-all"
                       style={genres.includes(g)?{background:'#4c1d9520',borderColor:'#7c3aed',color:'#a78bfa'}:{background:'#0d0d0d',borderColor:'#1a1a1a',color:'#4b5563'}}>{g}</button>
                   ))}
                 </div>
@@ -835,15 +835,15 @@ function ToneWizardModal({ onClose, onSave }) {
           {step===1 && (
             <>
               <div>
-                <label className="text-[8px] text-gray-600 uppercase tracking-widest block mb-2">게인 레벨 <span className="ml-2 font-mono text-red-400 normal-case">{GAIN_LEVELS[gainIdx]}</span></label>
+                <label className="text-xs text-gray-400 uppercase tracking-widest block mb-2">게인 레벨 <span className="ml-2 font-mono text-red-400 normal-case">{GAIN_LEVELS[gainIdx]}</span></label>
                 <ChoiceRow items={['🟢 Clean','🟡 Lt.Crunch','🟠 Crunch','🔴 High Gain','⚫ Metal']} active={gainIdx} onSelect={setGainIdx} color='#ef4444'/>
               </div>
               <div>
-                <label className="text-[8px] text-gray-600 uppercase tracking-widest block mb-2">밝기 <span className="ml-2 font-mono text-yellow-400 normal-case">{BRIGHT_LEVELS[brightIdx]}</span></label>
+                <label className="text-xs text-gray-400 uppercase tracking-widest block mb-2">밝기 <span className="ml-2 font-mono text-yellow-400 normal-case">{BRIGHT_LEVELS[brightIdx]}</span></label>
                 <ChoiceRow items={['⬛ Dark','🟫 Warm','⬜ Neutral','🟨 Bright','✨ Glassy']} active={brightIdx} onSelect={setBrightIdx} color='#eab308'/>
               </div>
               <div>
-                <label className="text-[8px] text-gray-600 uppercase tracking-widest block mb-2">공간감 <span className="ml-2 font-mono text-cyan-400 normal-case">{SPACE_LEVELS[spaceIdx]}</span></label>
+                <label className="text-xs text-gray-400 uppercase tracking-widest block mb-2">공간감 <span className="ml-2 font-mono text-cyan-400 normal-case">{SPACE_LEVELS[spaceIdx]}</span></label>
                 <ChoiceRow items={['💧 Dry','🌊 Subtle','🌊🌊 Moderate','🌊🌊🌊 Wet','🌌 Ambient']} active={spaceIdx} onSelect={setSpaceIdx} color='#06b6d4'/>
               </div>
             </>
@@ -851,29 +851,29 @@ function ToneWizardModal({ onClose, onSave }) {
           {step===2 && (
             <>
               <div>
-                <label className="text-[8px] text-gray-600 uppercase tracking-widest block mb-2">사용할 이펙터</label>
+                <label className="text-xs text-gray-400 uppercase tracking-widest block mb-2">사용할 이펙터</label>
                 <div className="grid grid-cols-3 gap-2">
                   {FX_TOGGLES.map(fx=>{
                     const on=fxOn.includes(fx.id), col=FX_COLOR[fx.cat]??FX_COLOR.EQ;
-                    return <button key={fx.id} onClick={()=>toggleFx(fx.id)} className="py-2.5 px-2 rounded-xl border text-[9px] font-bold transition-all"
+                    return <button key={fx.id} onClick={()=>toggleFx(fx.id)} className="py-2.5 px-2 rounded-xl border text-xs font-bold transition-all"
                       style={on?{background:col.bg,borderColor:col.border,color:col.text}:{background:'#0d0d0d',borderColor:'#1a1a1a',color:'#4b5563'}}>{on?'✓ ':''}{fx.label}</button>;
                   })}
                 </div>
               </div>
               {fxOn.includes('delay') && (
                 <div>
-                  <label className="text-[8px] text-gray-600 uppercase tracking-widest block mb-2">딜레이 타입</label>
+                  <label className="text-xs text-gray-400 uppercase tracking-widest block mb-2">딜레이 타입</label>
                   <div className="grid grid-cols-3 gap-1.5">
-                    {DELAY_TYPES.map(m=><button key={m} onClick={()=>setDelayModel(m)} className="py-1.5 px-2 rounded-lg border text-[8px] font-bold truncate"
+                    {DELAY_TYPES.map(m=><button key={m} onClick={()=>setDelayModel(m)} className="py-1.5 px-2 rounded-lg border text-xs font-bold truncate"
                       style={delayModel===m?{background:'#03131a',borderColor:'#06b6d4',color:'#22d3ee'}:{background:'#0d0d0d',borderColor:'#1a1a1a',color:'#4b5563'}}>{m}</button>)}
                   </div>
                 </div>
               )}
               {fxOn.includes('reverb') && (
                 <div>
-                  <label className="text-[8px] text-gray-600 uppercase tracking-widest block mb-2">리버브 타입</label>
+                  <label className="text-xs text-gray-400 uppercase tracking-widest block mb-2">리버브 타입</label>
                   <div className="grid grid-cols-3 gap-1.5">
-                    {REVERB_TYPES.map(m=><button key={m} onClick={()=>setReverbModel(m)} className="py-1.5 px-2 rounded-lg border text-[8px] font-bold truncate"
+                    {REVERB_TYPES.map(m=><button key={m} onClick={()=>setReverbModel(m)} className="py-1.5 px-2 rounded-lg border text-xs font-bold truncate"
                       style={reverbModel===m?{background:'#03130d',borderColor:'#10b981',color:'#34d399'}:{background:'#0d0d0d',borderColor:'#1a1a1a',color:'#4b5563'}}>{m}</button>)}
                   </div>
                 </div>
@@ -886,17 +886,17 @@ function ToneWizardModal({ onClose, onSave }) {
                 <div className="flex items-center gap-2 px-4 py-3 border-b border-purple-500/15">
                   <Sparkles size={11} className="text-purple-400"/>
                   <span className="text-sm font-bold text-white flex-1 truncate">{result.name}</span>
-                  <span className="text-[8px] bg-purple-600/20 text-purple-400 px-1.5 py-0.5 rounded border border-purple-500/30">WIZARD</span>
+                  <span className="text-xs bg-purple-600/20 text-purple-400 px-1.5 py-0.5 rounded border border-purple-500/30">WIZARD</span>
                 </div>
-                <div className="px-4 py-2.5 text-[9px] text-gray-600">
+                <div className="px-4 py-2.5 text-xs text-gray-400">
                   <span className="text-gray-500">픽업: </span>{result.pickup}{'  '}<span className="text-gray-500">태그: </span>{result.tags.map(t=>`#${t}`).join(' ')}
                 </div>
                 <div className="px-4 py-3">
-                  <div className="text-[7px] text-gray-700 uppercase tracking-widest mb-2">시그널 체인 ({result.chain.length} 블록)</div>
+                  <div className="text-sm text-gray-400 uppercase tracking-widest mb-2">시그널 체인 ({result.chain.length} 블록)</div>
                   <div className="flex flex-wrap gap-1.5 items-center">
                     {result.chain.map((b,i)=>{
                       const c=FX_COLOR[b.cat]??FX_COLOR.EQ;
-                      return <React.Fragment key={i}><div className="px-2 py-1 rounded-lg border text-center min-w-[52px]" style={{background:c.bg,borderColor:`${c.border}40`}}><div className="text-[7px] font-bold" style={{color:c.text}}>{FX_LABEL[b.cat]}</div><div className="text-[6px] mt-0.5" style={{color:c.text+'80'}}>{b.model}</div></div>{i<result.chain.length-1&&<ChevronRight size={8} className="text-gray-800"/>}</React.Fragment>;
+                      return <React.Fragment key={i}><div className="px-2 py-1 rounded-lg border text-center min-w-[52px]" style={{background:c.bg,borderColor:`${c.border}40`}}><div className="text-sm font-bold" style={{color:c.text}}>{FX_LABEL[b.cat]}</div><div className="text-[6px] mt-0.5" style={{color:c.text+'80'}}>{b.model}</div></div>{i<result.chain.length-1&&<ChevronRight size={8} className="text-gray-500"/>}</React.Fragment>;
                     })}
                   </div>
                 </div>
@@ -904,15 +904,15 @@ function ToneWizardModal({ onClose, onSave }) {
             </div>
           )}
         </div>
-        <div className="flex gap-3 px-5 py-4 border-t border-[#181818]">
+        <div className="flex gap-3 px-5 py-4 border-t border-[#303030]">
           {step===3 ? (
             <>
-              <button onClick={()=>setStep(0)} className="flex-1 py-2.5 rounded-xl border border-[#222] text-gray-600 hover:text-gray-300 text-xs font-bold">처음부터</button>
+              <button onClick={()=>setStep(0)} className="flex-1 py-2.5 rounded-xl border border-[#404040] text-gray-400 hover:text-gray-300 text-xs font-bold">처음부터</button>
               <button onClick={()=>{onSave(result);onClose();}} className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-black" style={{background:'#7c3aed',color:'white'}}><Save size={13}/> 프리셋으로 저장</button>
             </>
           ) : (
             <>
-              <button onClick={()=>step===0?onClose():setStep(s=>s-1)} className="w-24 py-2.5 rounded-xl border border-[#222] text-gray-600 hover:text-gray-300 text-xs font-bold">{step===0?'취소':'← 이전'}</button>
+              <button onClick={()=>step===0?onClose():setStep(s=>s-1)} className="w-24 py-2.5 rounded-xl border border-[#404040] text-gray-400 hover:text-gray-300 text-xs font-bold">{step===0?'취소':'← 이전'}</button>
               {step<2 ? <button onClick={()=>setStep(s=>s+1)} className="flex-1 py-2.5 rounded-xl text-xs font-black" style={{background:'#7c3aed',color:'white'}}>다음 →</button>
                       : <button onClick={handleGenerate} className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-black" style={{background:'#7c3aed',color:'white'}}><Zap size={13}/> 프리셋 생성</button>}
             </>
@@ -981,52 +981,52 @@ function ToneCloudApp() {
         onClose={()=>setSelBlockId(null)} onParamChange={(key,val)=>updateParam(selBlock.id,key,val)}
         onToggleActive={()=>toggleBlockActive(selBlock.id)} onReset={()=>resetBlockParams(selBlock.id)}/>
 
-      <header className="flex items-center justify-between px-6 py-3 border-b border-[#181818] bg-[#070707] flex-shrink-0">
+      <header className="flex items-center justify-between px-6 py-3 border-b border-[#303030] bg-[#111111] flex-shrink-0">
         <div className="flex items-center gap-3">
           <div className="bg-blue-600 p-1.5 rounded-lg shadow-lg shadow-blue-600/30"><Guitar size={16} className="text-white"/></div>
           <div>
             <h1 className="text-base font-black tracking-tight text-white leading-none">TONE CLOUD <span className="text-blue-500">GP-200JR</span></h1>
-            <p className="text-[8px] text-gray-700 uppercase tracking-[0.25em] mt-0.5">Schecter Sunset-6 Extreme · Valeton GP-200JR</p>
+            <p className="text-xs text-gray-400 uppercase tracking-[0.25em] mt-0.5">Schecter Sunset-6 Extreme · Valeton GP-200JR</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <div className="hidden md:flex flex-col items-end text-[8px] leading-tight">
+          <div className="hidden md:flex flex-col items-end text-xs leading-tight">
             <span className="text-green-500 tracking-widest">● ONLINE</span>
-            <span className="text-gray-700">{presets.length} PRESETS</span>
+            <span className="text-gray-400">{presets.length} PRESETS</span>
           </div>
-          <button onClick={()=>setShowBrowser(true)} className="flex items-center gap-1.5 border border-[#222] hover:border-blue-500/50 text-gray-500 hover:text-blue-400 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-colors"><BookOpen size={11}/> MODEL DB</button>
-          <button onClick={()=>setShowExport(true)}  className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-black transition-colors"><Download size={11}/> EXPORT</button>
+          <button onClick={()=>setShowBrowser(true)} className="flex items-center gap-1.5 border border-[#404040] hover:border-blue-500/50 text-gray-500 hover:text-blue-400 px-3 py-1.5 rounded-lg text-[13px] font-bold transition-colors"><BookOpen size={11}/> MODEL DB</button>
+          <button onClick={()=>setShowExport(true)}  className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-[13px] font-black transition-colors"><Download size={11}/> EXPORT</button>
         </div>
       </header>
 
       <div className="flex flex-1 overflow-hidden">
-        <aside className="w-60 flex-shrink-0 flex flex-col border-r border-[#141414] bg-[#070707] overflow-hidden">
-          <div className="p-3 border-b border-[#141414]">
+        <aside className="w-60 flex-shrink-0 flex flex-col border-r border-[#2a2a2a] bg-[#111111] overflow-hidden">
+          <div className="p-3 border-b border-[#2a2a2a]">
             <div className="relative">
-              <Search size={11} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-700"/>
-              <input className="w-full bg-[#0d0d0d] border border-[#1c1c1c] rounded-lg pl-8 pr-3 py-2 text-[11px] text-gray-300 placeholder-gray-700 focus:outline-none focus:border-blue-600 transition-colors"
+              <Search size={11} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/>
+              <input className="w-full bg-[#161616] border border-[#383838] rounded-lg pl-8 pr-3 py-2 text-sm text-gray-300 placeholder-gray-500 focus:outline-none focus:border-blue-600 transition-colors"
                 placeholder="SEARCH PRESETS..." value={search} onChange={e=>setSearch(e.target.value)}/>
             </div>
           </div>
-          <div className="p-3 border-b border-[#141414]">
-            <div className="flex items-center gap-1 mb-2"><Tag size={9} className="text-gray-700"/><span className="text-[8px] text-gray-700 uppercase tracking-widest">TAGS</span></div>
+          <div className="p-3 border-b border-[#2a2a2a]">
+            <div className="flex items-center gap-1 mb-2"><Tag size={9} className="text-gray-400"/><span className="text-xs text-gray-400 uppercase tracking-widest">TAGS</span></div>
             <div className="flex flex-wrap gap-1">
               {allTags.map(tag=>(
-                <button key={tag} onClick={()=>toggleTag(tag)} className={`text-[8px] px-1.5 py-0.5 rounded-full border transition-all ${activeTags.includes(tag)?'bg-blue-600/20 border-blue-500/60 text-blue-400':'border-[#222] text-gray-700 hover:border-gray-600'}`}>{tag}</button>
+                <button key={tag} onClick={()=>toggleTag(tag)} className={`text-xs px-1.5 py-0.5 rounded-full border transition-all ${activeTags.includes(tag)?'bg-blue-600/20 border-blue-500/60 text-blue-400':'border-[#404040] text-gray-400 hover:border-gray-600'}`}>{tag}</button>
               ))}
             </div>
           </div>
           <div className="flex-1 overflow-y-auto">
             <div className="p-2 space-y-0.5">
-              <div className="text-[8px] text-gray-700 uppercase tracking-widest px-2 py-1">PRESETS ({filtered.length})</div>
+              <div className="text-xs text-gray-400 uppercase tracking-widest px-2 py-1">PRESETS ({filtered.length})</div>
               {filtered.map(preset=>{
                 const isActive=preset.id===activeId;
                 return (
                   <button key={preset.id} onClick={()=>{setActiveId(preset.id);setSelBlockId(null);}} className={`w-full text-left px-2.5 py-2 rounded-lg transition-all ${isActive?'bg-blue-600/12 border border-blue-500/25':'border border-transparent hover:bg-[#0e0e0e]'}`}>
                     <div className="flex items-start justify-between gap-1">
                       <div className="min-w-0">
-                        <div className={`text-[11px] font-bold truncate ${isActive?'text-blue-400':'text-gray-300'}`}>{preset.name}</div>
-                        <div className="text-[8px] text-gray-600 flex items-center gap-1 mt-0.5 truncate"><Music size={7}/>{preset.artist}</div>
+                        <div className={`text-sm font-bold truncate ${isActive?'text-blue-400':'text-gray-300'}`}>{preset.name}</div>
+                        <div className="text-xs text-gray-400 flex items-center gap-1 mt-0.5 truncate"><Music size={7}/>{preset.artist}</div>
                       </div>
                       <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
                         {preset.isAI&&<Sparkles size={9} className="text-blue-500"/>}
@@ -1034,8 +1034,8 @@ function ToneCloudApp() {
                       </div>
                     </div>
                     <div className="flex items-center gap-0.5 mt-1.5 flex-wrap">
-                      {preset.chain.slice(0,5).map((b,i)=>{const c=FX_COLOR[b.cat]??FX_COLOR.EQ;return <span key={i} className="text-[7px] px-1 py-0.5 rounded" style={{background:c.bg,color:c.text,border:`1px solid ${c.border}33`}}>{b.cat}</span>;})}
-                      {preset.chain.length>5&&<span className="text-[7px] text-gray-700">+{preset.chain.length-5}</span>}
+                      {preset.chain.slice(0,5).map((b,i)=>{const c=FX_COLOR[b.cat]??FX_COLOR.EQ;return <span key={i} className="text-sm px-1 py-0.5 rounded" style={{background:c.bg,color:c.text,border:`1px solid ${c.border}33`}}>{b.cat}</span>;})}
+                      {preset.chain.length>5&&<span className="text-sm text-gray-400">+{preset.chain.length-5}</span>}
                     </div>
                   </button>
                 );
@@ -1045,7 +1045,7 @@ function ToneCloudApp() {
         </aside>
 
         <main className="flex-1 flex flex-col overflow-hidden">
-          <div className="px-6 py-4 border-b border-[#141414] flex-shrink-0">
+          <div className="px-6 py-4 border-b border-[#2a2a2a] flex-shrink-0">
             <div className="flex items-start justify-between">
               <div>
                 <div className="flex items-center gap-2">
@@ -1053,56 +1053,56 @@ function ToneCloudApp() {
                   <h2 className="text-xl font-black text-white tracking-tight">{active.name}</h2>
                 </div>
                 <div className="flex flex-wrap items-center gap-3 mt-1.5">
-                  <span className="text-[10px] text-gray-500 flex items-center gap-1"><Music size={10}/>{active.artist}</span>
-                  {active.song&&<span className="text-[10px] text-gray-700">"{active.song}"</span>}
-                  <span className="text-[8px] bg-blue-900/25 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20 uppercase tracking-wider">{active.pickup}</span>
+                  <span className="text-[13px] text-gray-500 flex items-center gap-1"><Music size={10}/>{active.artist}</span>
+                  {active.song&&<span className="text-[13px] text-gray-400">"{active.song}"</span>}
+                  <span className="text-xs bg-blue-900/25 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20 uppercase tracking-wider">{active.pickup}</span>
                 </div>
               </div>
               <div className="flex items-center gap-0.5">
-                {[1,2,3,4,5].map(s=><Star key={s} size={11} className={s<=active.rating?'text-yellow-500 fill-yellow-500':'text-gray-800'}/>)}
+                {[1,2,3,4,5].map(s=><Star key={s} size={11} className={s<=active.rating?'text-yellow-500 fill-yellow-500':'text-gray-500'}/>)}
               </div>
             </div>
             <div className="flex flex-wrap gap-1 mt-2.5">
-              {active.tags.map(tag=><span key={tag} className="text-[8px] px-1.5 py-0.5 rounded-full border border-[#1e1e1e] text-gray-700">#{tag}</span>)}
+              {active.tags.map(tag=><span key={tag} className="text-xs px-1.5 py-0.5 rounded-full border border-[#1e1e1e] text-gray-400">#{tag}</span>)}
             </div>
           </div>
 
-          <div className="px-6 py-4 border-b border-[#141414] flex-shrink-0">
+          <div className="px-6 py-4 border-b border-[#2a2a2a] flex-shrink-0">
             <div className="flex items-center gap-2 mb-3">
-              <Activity size={10} className="text-gray-700"/>
-              <span className="text-[8px] text-gray-700 uppercase tracking-widest">SIGNAL CHAIN — VALETON GP-200JR</span>
+              <Activity size={10} className="text-gray-400"/>
+              <span className="text-xs text-gray-400 uppercase tracking-widest">SIGNAL CHAIN — VALETON GP-200JR</span>
             </div>
             <div className="flex items-center gap-1 overflow-x-auto pb-1">
               <div className="flex items-center gap-1 flex-shrink-0">
-                <div className="min-w-[58px] p-2 rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] text-center">
-                  <Guitar size={14} className="text-gray-700 mx-auto mb-1"/>
-                  <div className="text-[7px] text-gray-700 tracking-widest">GUITAR</div>
+                <div className="min-w-[58px] p-2 rounded-xl border border-[#383838] bg-[#161616] text-center">
+                  <Guitar size={14} className="text-gray-400 mx-auto mb-1"/>
+                  <div className="text-sm text-gray-400 tracking-widest">GUITAR</div>
                 </div>
-                <ChevronRight size={10} className="text-gray-800"/>
+                <ChevronRight size={10} className="text-gray-500"/>
               </div>
               {active.chain.map(block=>(
                 <ChainBlock key={block.id} block={block} isSelected={selBlockId===block.id}
                   onClick={()=>setSelBlockId(selBlockId===block.id?null:block.id)}/>
               ))}
-              <div className="min-w-[58px] p-2 rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] text-center flex-shrink-0">
+              <div className="min-w-[58px] p-2 rounded-xl border border-[#383838] bg-[#161616] text-center flex-shrink-0">
                 <div className="w-3.5 h-3.5 rounded-full bg-green-600 mx-auto mb-1 ring-2 ring-green-400/25"/>
-                <div className="text-[7px] text-gray-700 tracking-widest">OUTPUT</div>
+                <div className="text-sm text-gray-400 tracking-widest">OUTPUT</div>
               </div>
             </div>
           </div>
 
           <div className="flex-1 flex flex-col items-center justify-center text-center gap-3 px-6">
-            <div className="w-16 h-16 rounded-2xl border border-[#1a1a1a] flex items-center justify-center mb-1" style={{background:'#0d0d0d'}}>
-              <Sliders size={28} className="text-gray-800"/>
+            <div className="w-16 h-16 rounded-2xl border border-[#383838] flex items-center justify-center mb-1" style={{background:'#0d0d0d'}}>
+              <Sliders size={28} className="text-gray-500"/>
             </div>
-            <p className="text-gray-700 text-sm font-bold">시그널 체인 블록을 클릭하세요</p>
-            <p className="text-gray-800 text-xs leading-relaxed max-w-xs">우측에서 GP-200JR 스타일 노브 패널이 슬라이드 인 됩니다.<br/>드래그·더블클릭·+/- 버튼으로 값을 조절할 수 있습니다.</p>
-            <button onClick={()=>setShowBrowser(true)} className="mt-2 flex items-center gap-1.5 text-[10px] text-blue-500 hover:text-blue-400 border border-blue-500/20 hover:border-blue-500/40 px-3 py-1.5 rounded-lg transition-colors"><BookOpen size={11}/> GP-200JR 모델 브라우저 열기</button>
+            <p className="text-gray-300 text-sm font-bold">시그널 체인 블록을 클릭하세요</p>
+            <p className="text-gray-400 text-xs leading-relaxed max-w-xs">우측에서 GP-200JR 스타일 노브 패널이 슬라이드 인 됩니다.<br/>드래그·더블클릭·+/- 버튼으로 값을 조절할 수 있습니다.</p>
+            <button onClick={()=>setShowBrowser(true)} className="mt-2 flex items-center gap-1.5 text-[13px] text-blue-500 hover:text-blue-400 border border-blue-500/20 hover:border-blue-500/40 px-3 py-1.5 rounded-lg transition-colors"><BookOpen size={11}/> GP-200JR 모델 브라우저 열기</button>
             <div className="mt-6 w-full max-w-md">
-              <div className="text-[8px] text-gray-800 uppercase tracking-widest mb-2">ACTIVE CHAIN</div>
+              <div className="text-xs text-gray-500 uppercase tracking-widest mb-2">ACTIVE CHAIN</div>
               <div className="flex flex-wrap justify-center gap-1.5">
                 {active.chain.map(b=>{const c=FX_COLOR[b.cat]??FX_COLOR.EQ;return(
-                  <button key={b.id} onClick={()=>setSelBlockId(b.id)} className="px-2.5 py-1.5 rounded-lg border text-[8px] font-bold uppercase tracking-wider transition-all hover:scale-105"
+                  <button key={b.id} onClick={()=>setSelBlockId(b.id)} className="px-2.5 py-1.5 rounded-lg border text-xs font-bold uppercase tracking-wider transition-all hover:scale-105"
                     style={{background:c.bg,borderColor:`${c.border}40`,color:b.active?c.text:c.text+'40'}}>{b.model}</button>
                 );})}
               </div>
@@ -1111,28 +1111,28 @@ function ToneCloudApp() {
         </main>
       </div>
 
-      <footer className="border-t border-[#141414] bg-[#070707] px-6 py-3.5 flex-shrink-0">
+      <footer className="border-t border-[#2a2a2a] bg-[#111111] px-6 py-3.5 flex-shrink-0">
         {aiPreview ? (
           <div className="rounded-xl p-3.5 border" style={{background:'#080f1c',borderColor:'#3b82f630'}}>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Sparkles size={12} className="text-blue-400"/>
                 <span className="text-sm font-bold text-white">{aiPreview.name}</span>
-                <span className="text-[8px] bg-blue-600/20 text-blue-400 px-1.5 py-0.5 rounded border border-blue-500/30">AI · GP-200JR</span>
+                <span className="text-xs bg-blue-600/20 text-blue-400 px-1.5 py-0.5 rounded border border-blue-500/30">AI · GP-200JR</span>
               </div>
               <div className="flex items-center gap-2">
-                <button onClick={()=>setAiPreview(null)} className="flex items-center gap-1 text-[10px] text-gray-600 hover:text-gray-400 px-2.5 py-1.5 rounded-lg border border-[#222]"><X size={10}/> DISCARD</button>
-                <button onClick={saveAI} className="flex items-center gap-1.5 text-[10px] text-white bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded-lg font-bold"><Save size={10}/> SAVE PRESET</button>
+                <button onClick={()=>setAiPreview(null)} className="flex items-center gap-1 text-[13px] text-gray-400 hover:text-gray-400 px-2.5 py-1.5 rounded-lg border border-[#404040]"><X size={10}/> DISCARD</button>
+                <button onClick={saveAI} className="flex items-center gap-1.5 text-[13px] text-white bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded-lg font-bold"><Save size={10}/> SAVE PRESET</button>
               </div>
             </div>
             <div className="flex items-center gap-1 overflow-x-auto">
               {aiPreview.chain.map((b,i)=>{const c=FX_COLOR[b.cat]??FX_COLOR.EQ;return(
                 <React.Fragment key={i}>
                   <div className="flex-shrink-0 min-w-[64px] text-center p-1.5 rounded-lg border" style={{background:c.bg,borderColor:`${c.border}40`}}>
-                    <div className="text-[7px] font-bold uppercase" style={{color:c.text}}>{FX_LABEL[b.cat]}</div>
-                    <div className="text-[7px] mt-0.5" style={{color:c.text+'99'}}>{b.model}</div>
+                    <div className="text-sm font-bold uppercase" style={{color:c.text}}>{FX_LABEL[b.cat]}</div>
+                    <div className="text-sm mt-0.5" style={{color:c.text+'99'}}>{b.model}</div>
                   </div>
-                  {i<aiPreview.chain.length-1&&<ChevronRight size={9} className="text-gray-800 flex-shrink-0"/>}
+                  {i<aiPreview.chain.length-1&&<ChevronRight size={9} className="text-gray-500 flex-shrink-0"/>}
                 </React.Fragment>
               );})}
             </div>
@@ -1141,9 +1141,9 @@ function ToneCloudApp() {
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 flex-shrink-0">
               <Sparkles size={13} className="text-blue-500"/>
-              <span className="text-[8px] text-gray-700 uppercase tracking-widest hidden sm:block">AI TONE</span>
+              <span className="text-xs text-gray-400 uppercase tracking-widest hidden sm:block">AI TONE</span>
             </div>
-            <input className="flex-1 bg-[#0d0d0d] border border-[#1c1c1c] rounded-xl px-4 py-2.5 text-xs text-gray-300 placeholder-gray-700 focus:outline-none focus:border-blue-600 transition-colors"
+            <input className="flex-1 bg-[#161616] border border-[#383838] rounded-xl px-4 py-2.5 text-xs text-gray-300 placeholder-gray-500 focus:outline-none focus:border-blue-600 transition-colors"
               placeholder="아티스트 입력 (HigeDan / Vaundy / YOASOBI / Metallica…)"
               value={aiQuery} onChange={e=>setAiQuery(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleGenerate()}/>
             <button onClick={handleGenerate} disabled={aiLoading||!aiQuery.trim()}
