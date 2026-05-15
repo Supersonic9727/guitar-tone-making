@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TONE CLOUD: GP-200JR Edition</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #0a0a0a; }
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: #0a0a0a; }
+    ::-webkit-scrollbar-thumb { background: #1f2937; border-radius: 2px; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+const { useState, useMemo, useRef, useEffect, useCallback } = React;
+
+/* ── Icon helpers (React.createElement, no JSX) ── */
+const CE = React.createElement;
+const _svg = (kids, extra={}) => ({size=16, className=''}) =>
+  CE('svg', {width:size, height:size, viewBox:'0 0 24 24', fill:'none', stroke:'currentColor', strokeWidth:'2', strokeLinecap:'round', strokeLinejoin:'round', className, ...extra}, ...kids);
+const _p = (d,k) => CE('path',{key:k||d,d});
+const _c = (cx,cy,r) => CE('circle',{key:cx+cy,cx,cy,r});
+const _l = (x1,y1,x2,y2) => CE('line',{key:x1+y1,x1,y1,x2,y2});
+const _pl= (points,k) => CE('polyline',{key:k||points,points});
+const _pg= (points) => CE('polygon',{key:points,points});
+
+const Guitar       = _svg([_p('M19.6 3L3 19.6',0), _p('M12.1 3.9a3 3 0 0 1 4.2 4.2L9.2 15.2a3 3 0 0 1-4.2-4.2l7.1-7.1z',1), _c('6.5','17.5','1.5')]);
+const Music        = _svg([_p('M9 18V5l12-2v13'), _c(6,18,3), _c(18,16,3)]);
+const Zap          = _svg([_pg('13 2 3 14 12 14 11 22 21 10 12 10 13 2')]);
+const Power        = _svg([_p('M18.36 6.64a9 9 0 1 1-12.73 0'), _l(12,2,12,12)]);
+const Save         = _svg([_p('M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z'), _pl('17 21 17 13 7 13 7 21','a'), _pl('7 3 7 8 15 8','b')]);
+const Search       = _svg([_c(11,11,8), _l(21,21,16.65,16.65)]);
+const Sparkles     = _svg([_p('M12 3l1.88 5.76L19 10l-5.12 3.76L15.76 19 12 15.5 8.24 19l1.88-5.24L5 10l5.12-1.24L12 3z')]);
+const Star         = _svg([_pg('12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2')]);
+const Download     = _svg([_p('M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'), _pl('7 10 12 15 17 10'), _l(12,15,12,3)]);
+const ChevronRight = _svg([_pl('9 18 15 12 9 6')]);
+const Activity     = _svg([_pl('22 12 18 12 15 21 9 3 6 12 2 12')]);
+const Sliders      = _svg([_l(4,21,4,14), _l(4,10,4,3), _l(12,21,12,12), _l(12,8,12,3), _l(20,21,20,16), _l(20,12,20,3), _l(1,14,7,14), _l(9,8,15,8), _l(17,16,23,16)]);
+const Tag          = _svg([_p('M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z'), _l(7,7,7.01,7)]);
+const X            = _svg([_l(18,6,6,18), _l(6,6,18,18)]);
+const BookOpen     = _svg([_p('M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z','a'), _p('M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z','b')]);
+const ChevronDown  = _svg([_pl('6 9 12 15 18 9')]);
+const Plus         = _svg([_l(12,5,12,19), _l(5,12,19,12)]);
+const Minus        = _svg([_l(5,12,19,12)]);
+const RotateCcw    = _svg([_pl('1 4 1 10 7 10'), _p('M3.51 15a9 9 0 1 0 .49-3.36')]);
+
+const MODEL_DB = { // (was export const)
+  COMP: {
+    label: 'COMPRESSOR', color: { border:'#3b82f6', bg:'#0a1628', text:'#60a5fa' },
+    models: [
+      { id:'COMP',   name:'COMP',    base:'Ross Compressor',                   desc:'클래식 기타 컴프레서의 원형' },
+      { id:'COMP4',  name:'COMP4',   base:'Keeley C4 4-Knob',                  desc:'4노브 컴프레서, 섬세한 다이나믹 제어' },
+      { id:'S-Comp', name:'S-Comp',  base:'Custom',                            desc:'풀 어저스터블 컴프레서' },
+    ],
+  },
+  BOOST: {
+    label: 'BOOST', color: { border:'#f97316', bg:'#1c0d00', text:'#fb923c' },
+    models: [
+      { id:'Micro Boost', name:'Micro Boost', base:'MXR M133 Micro Amp',  desc:'깔끔한 클린 부스트' },
+      { id:'AC Boost',    name:'AC Boost',    base:'Xotic AC Booster',     desc:'투명하고 풍부한 부스트' },
+      { id:'B-Boost',     name:'B-Boost',     base:'Xotic BB Preamp',      desc:'미들 강조 오버드라이브 부스트' },
+      { id:'P-Boost',     name:'P-Boost',     base:'Xotic RC Booster',     desc:'신호 손실 없는 클린 부스트' },
+      { id:'14 Boost',    name:'14 Boost',    base:'Fortin Grind',         desc:'메탈 기어 부스트, 타이트한 저음' },
+      { id:'FAT BB',      name:'FAT BB',      base:'Custom',               desc:'로우컷 필터 탑재 클린 부스트' },
+      { id:'Boost',       name:'Boost',       base:'Xotic EP Booster',     desc:'EP프리앰프 스타일, 투명한 부스트' },
+    ],
+  },
+  OD: {
+    label: 'OVERDRIVE', color: { border:'#f59e0b', bg:'#1c1200', text:'#fbbf24' },
+    models: [
+      { id:'Green OD',    name:'Green OD',    base:'Ibanez TS-808 Tube Screamer',       desc:'따뜻하고 미들리치한 오버드라이브의 교과서' },
+      { id:'OD 9',        name:'OD 9',        base:'Ibanez TS9 Tube Screamer',          desc:'TS-808 보다 밝고 투명한 오버드라이브' },
+      { id:'Yellow OD',   name:'Yellow OD',   base:'70s Fuzz/Asymmetric',               desc:'70년대 퍼즈/비대칭 회로 오버드라이브' },
+      { id:'Penesas',     name:'Penesas',     base:'Klon Centaur',                      desc:'투명하고 다이나믹 감도가 높은 전설의 부스터' },
+      { id:'Swarm',       name:'Swarm',       base:'Providence SOV-2 Stampede OD',      desc:'두껍고 파워풀한 오버드라이브' },
+      { id:'Super OD',    name:'Super OD',    base:'Custom Asymmetric',                 desc:'비대칭 회로 오버드라이브' },
+      { id:'Blues OD',    name:'Blues OD',    base:'Custom',                            desc:'따뜻하고 자연스러운 블루스 오버드라이브' },
+      { id:'TaiChi OD',   name:'TaiChi OD',   base:'Hermida Zendrive',                  desc:'독특한 음색의 투명한 오버드라이브' },
+      { id:'Timmy OD',    name:'Timmy OD',    base:'Paul Cochrane Timmy',               desc:'클리어하고 다이나믹한 OD' },
+      { id:'Precise OD',  name:'Precise OD',  base:'Horizon Devices Precision Drive',   desc:'EQ 기능 내장 고정밀 드라이브' },
+      { id:'Empire OD',   name:'Empire OD',   base:'Analog.Man Prince of Tone',         desc:'플렉시 스타일 크런치' },
+      { id:'Force',       name:'Force',       base:'Fulltone OCD',                      desc:'하이-게인 오버드라이브, 표현력 풍부' },
+      { id:'Tube',        name:'Tube',        base:'BK Butler Tube Driver',             desc:'튜브 드라이브 질감의 오버드라이브' },
+      { id:'Blues Master',name:'Blues Master',base:'Marshall BluesBreaker',             desc:'마샬 블루스브레이커 스타일' },
+      { id:'Master OD',   name:'Master OD',   base:'Custom Plexi-style',                desc:'클린~플렉시 스타일까지 넓은 EQ 범위' },
+    ],
+  },
+  DST: {
+    label: 'DISTORTION', color: { border:'#ef4444', bg:'#1c0808', text:'#f87171' },
+    models: [
+      { id:'Lazaro',      name:'Lazaro',      base:'EHX Big Muff Pi',               desc:'클래식 퍼즈/디스토션, 두꺼운 사운드' },
+      { id:'Red Haze',    name:'Red Haze',    base:'Dallas-Arbiter Fuzz Face',       desc:'빈티지 퍼즈, 지미 헨드릭스 사운드' },
+      { id:'Sora Fuzz',   name:'Sora Fuzz',   base:'Sola Sound Tone Bender',         desc:'영국 빈티지 퍼즈, 롤링스톤즈 스타일' },
+      { id:'Plustortion', name:'Plustortion', base:'MXR M104 Distortion+',           desc:'클래식 MXR 디스토션' },
+      { id:'SM Dist',     name:'SM Dist',     base:'Custom 70s-80s',                 desc:'70~80년대 스타일 클래식 디스토션' },
+      { id:'Darktale',    name:'Darktale',    base:'ProCo Rat',                      desc:'어그레시브하고 밀도 높은 디스토션' },
+      { id:'Chief',       name:'Chief',       base:"Marshall Guv'nor",               desc:'마샬 거버너, 브리티시 디스토션' },
+      { id:'Master Dist', name:'Master Dist', base:'Marshall Shredmaster',           desc:'하이게인 메탈 디스토션' },
+      { id:'La Charger',  name:'La Charger',  base:'MI Audio Crunch Box',            desc:'팻하고 포인티한 디스토션' },
+      { id:'Revolt',      name:'Revolt',      base:'Suhr Riot',                      desc:'현대적인 하이게인 디스토션' },
+      { id:'Flagman Dist',name:'Flagman Dist',base:'Modern British Boutique',        desc:'현대 영국식 하이게인 디스토션' },
+    ],
+  },
+  AMP: {
+    label: 'AMP SIM', color: { border:'#eab308', bg:'#1c1600', text:'#facc15' },
+    models: [
+      { id:'Tweedy',      name:'Tweedy',      base:'Fender Tweed Deluxe',            desc:'따뜻한 트위드 클린, 픽 어택 선명' },
+      { id:'Bellman 59N', name:'Bellman 59N', base:"Fender '59 Bassman (clean)",     desc:'베이스맨 클린 채널, 풍부한 중역' },
+      { id:'Dark Twin',   name:'Dark Twin',   base:"Fender '65 Twin Reverb",         desc:'스탠다드 클린 톤의 기준' },
+      { id:'Dark DLX',    name:'Dark DLX',    base:'Fender Deluxe',                  desc:'따뜻하고 라운드한 클린' },
+      { id:'Dark Vibra',  name:'Dark Vibra',  base:'Fender Vibroverb (6G16)',         desc:'빈티지 펜더 바이브라버브' },
+      { id:'Silver Twin', name:'Silver Twin', base:'Fender Silverface Twin',          desc:'실버페이스 트윈 리버브' },
+      { id:'Foxy 30N',    name:'Foxy 30N',    base:'VOX AC30HW (normal)',             desc:'영국식 클린, 벨라이크 고음' },
+      { id:'J-120 CL',    name:'J-120 CL',    base:'Roland Jazz Chorus (clean)',      desc:'JC-120 클린, 크리스털 클린의 대명사' },
+      { id:'Match CL',    name:'Match CL',    base:'Matchless Chieftain 212 (clean)', desc:'부티크 클린, 풍부한 하모닉스' },
+      { id:'L-Star CL',   name:'L-Star CL',   base:'Mesa/Boogie Lone Star (clean)',   desc:'메사 론스타 클린 채널' },
+      { id:'BogSV CL',    name:'BogSV CL',    base:'Bogner Shiva 20th (clean)',       desc:'보그너 시바 클린' },
+      { id:'Z38 CL',      name:'Z38 CL',      base:'Dr. Z Maz 38 Sr. (clean)',        desc:'Dr.Z 마즈 클린 채널' },
+      { id:'SUPDual CL',  name:'SUPDual CL',  base:'Supro Dual-Tone 1624T (clean)',   desc:'수프로 빈티지 클린' },
+      { id:'UK 45',       name:'UK 45',       base:'Marshall JTM45',                 desc:'마샬 JTM45, 초기 브리티시 크런치' },
+      { id:'UK 50',       name:'UK 50',       base:'Marshall JMP50/JTM50',            desc:'마샬 플렉시 스타일' },
+      { id:'UK SLP',      name:'UK SLP',      base:'Marshall 1959HW Super Lead',      desc:'슈퍼 리드 플렉시 크런치' },
+      { id:'Foxy 30TB',   name:'Foxy 30TB',   base:'VOX AC30HW (top boost)',          desc:'VOX 탑부스트 채널' },
+      { id:'Match OD',    name:'Match OD',    base:'Matchless Chieftain (drive)',     desc:'부티크 드라이브' },
+      { id:'Juice30 OD',  name:'Juice30 OD',  base:'Orange AD30 (dirty)',             desc:'오렌지 더티, 두꺼운 미드' },
+      { id:'Bad-KT OD',   name:'Bad-KT OD',   base:'Bad Cat Hot Cat 30 (drive)',      desc:'배드캣 오버드라이브 채널' },
+      { id:'Bog BlueV',   name:'Bog BlueV',   base:'Bogner XTC Blue (drive)',         desc:'보그너 XTC 블루 채널' },
+      { id:'UK 800',      name:'UK 800',      base:'Marshall JCM800',                desc:'메탈/하드록의 교과서, JCM800' },
+      { id:'UK 900',      name:'UK 900',      base:'Marshall JCM900',                desc:'JCM900 하이게인' },
+      { id:'Flagman 1',   name:'Flagman 1',   base:'UK Boutique (Brown Eye)',         desc:'브라운 아이 영국 부티크 드라이브' },
+      { id:'Flagman 2',   name:'Flagman 2',   base:'UK Boutique (Brown Eye +)',       desc:'브라운 아이 변형' },
+      { id:'Mess DualV',  name:'Mess DualV',  base:'Mesa/Boogie Dual Rectifier (vintage)', desc:'듀얼 렉티 빈티지 모드' },
+      { id:'Mess DualM',  name:'Mess DualM',  base:'Mesa/Boogie Dual Rectifier (modern)',  desc:'듀얼 렉티 모던 모드' },
+      { id:'Mess2C+ 1',   name:'Mess2C+ 1',   base:'Mesa/Boogie Mark IIC+',          desc:'메사 마크 IIC+ 리드 채널' },
+      { id:'Mess4 LD',    name:'Mess4 LD',    base:'Mesa/Boogie Mark IV (lead)',      desc:'메사 마크 IV 리드' },
+      { id:'EV 51',       name:'EV 51',       base:'Peavey 5150',                    desc:'반 헤일런 5150, 공격적인 하이게인' },
+      { id:'Eagle 120',   name:'Eagle 120',   base:'ENGL Savage 120',                desc:'ENGL 새비지 120 하이게인' },
+      { id:'Dizz VH',     name:'Dizz VH',     base:'Diezel VH4',                     desc:'다이젤 VH4, 독일 하이게인의 정점' },
+      { id:'Bog RedV',    name:'Bog RedV',    base:'Bogner XTC Red (hi-gain)',        desc:'보그너 레드 채널 하이게인' },
+      { id:'Classic Bass',name:'Classic Bass',base:'Ampeg SVT',                      desc:'베이스 앰프 클래식' },
+      { id:'AC Pre',      name:'AC Pre',      base:'AER Colourizer 2',               desc:'어쿠스틱 기타 프리앰프' },
+    ],
+  },
+  CAB: {
+    label: 'CAB SIM', color: { border:'#78716c', bg:'#141210', text:'#a8a29e' },
+    models: [
+      { id:'1x12 Fender',  name:'1x12 Fender',  base:'Fender 1x12"',          desc:'펜더 1x12 캐비닛' },
+      { id:'2x12 Fender',  name:'2x12 Fender',  base:'Fender 2x12"',          desc:'펜더 투웰브, 클린 클래식' },
+      { id:'4x12 Fender',  name:'4x12 Fender',  base:'Fender 4x12"',          desc:'펜더 포웰브' },
+      { id:'4x12 GRN',     name:'4x12 GRN',     base:'Marshall 4x12 Greenback',desc:'마샬 그린백, 클래식 브리티시 사운드' },
+      { id:'4x12 V30',     name:'4x12 V30',     base:'Marshall/Celestion V30', desc:'V30 스피커 4x12, 미드 강조' },
+      { id:'4x12 MD',      name:'4x12 MD',      base:'Marshall 4x12 Modern',   desc:'현대적인 마샬 4x12' },
+      { id:'2x12 Vox',     name:'2x12 Vox',     base:'VOX AC30 2x12"',        desc:'VOX AC30 캐비닛' },
+      { id:'4x12 Orange',  name:'4x12 Orange',  base:'Orange PPC412',          desc:'오렌지 PPC412' },
+      { id:'4x12 Mesa',    name:'4x12 Mesa',    base:'Mesa/Boogie 4x12"',      desc:'메사 렉티 4x12 캐비닛' },
+      { id:'4x12 Soldano', name:'4x12 Soldano', base:'Soldano 4x12"',          desc:'솔다노 하이게인 캐비닛' },
+      { id:'User IR 1',    name:'User IR 1',    base:'Custom IR',              desc:'사용자 임펄스 응답 1번' },
+      { id:'User IR 2',    name:'User IR 2',    base:'Custom IR',              desc:'사용자 임펄스 응답 2번' },
+    ],
+  },
+  CHO: {
+    label: 'CHORUS', color: { border:'#8b5cf6', bg:'#110a24', text:'#a78bfa' },
+    models: [
+      { id:'A-Chorus', name:'A-Chorus', base:'80s Analog Chorus',           desc:'1980년대 클래식 아날로그 코러스' },
+      { id:'G-Chorus', name:'G-Chorus', base:'Boss CE-1 / Roland JC-120',   desc:'전설의 앙상블 코러스' },
+      { id:'C-Chorus', name:'C-Chorus', base:'Analog Multi-mode Chorus',    desc:'멀티모드 아날로그 코러스' },
+      { id:'B-Chorus', name:'B-Chorus', base:'Boss CE-5 Stereo Chorus',     desc:'스테레오 4버튼 코러스 페달' },
+      { id:'M-Chorus', name:'M-Chorus', base:'Multi-dimensional Chorus',    desc:'다차원 코러스 이펙트' },
+    ],
+  },
+  FLG: {
+    label: 'FLANGER', color: { border:'#7c3aed', bg:'#0f0820', text:'#8b5cf6' },
+    models: [
+      { id:'Jet',      name:'Jet',      base:'Classic Flanger',             desc:'클래식 제트 플랜저 이펙트' },
+      { id:'B-Jet',    name:'B-Jet',    base:'Bass Flanger',                desc:'베이스 전용 플랜저' },
+      { id:'N-Jet',    name:'N-Jet',    base:'Negative Feedback Flanger',   desc:'음수 피드백, 수중 사운드' },
+      { id:'Trem Jet', name:'Trem Jet', base:'Flanger + Tremolo Combo',     desc:'플랜저+트레몰로 복합 이펙트' },
+    ],
+  },
+  PHS: {
+    label: 'PHASER', color: { border:'#c084fc', bg:'#180a24', text:'#d8b4fe' },
+    models: [
+      { id:'O-Phase',  name:'O-Phase',  base:'MXR M101 Phase 90',           desc:'클래식 Phase 90 위상 이동' },
+      { id:'G-Phase',  name:'G-Phase',  base:'Green Analog Phaser',         desc:'BBD 기반 그린 아날로그 페이저' },
+      { id:'S-Phase',  name:'S-Phase',  base:'EHX Small Stone',             desc:'소형 스톤 페이저' },
+      { id:'M-Vibe',   name:'M-Vibe',   base:'Voodoo Lab Micro Vibe',       desc:'1968 Uni-Vibe 스타일' },
+    ],
+  },
+  TREM: {
+    label: 'TREMOLO', color: { border:'#06b6d4', bg:'#03131a', text:'#22d3ee' },
+    models: [
+      { id:'O-Trem',    name:'O-Trem',    base:'Demeter TRM-1 Tremulator', desc:'광학식 트레몰로' },
+      { id:'Sine Trem', name:'Sine Trem', base:'Sine Wave Tremolo',        desc:'사인파 트레몰로' },
+      { id:'Bias Trem', name:'Bias Trem', base:'Bias Tremolo',             desc:'바이어스 트레몰로' },
+    ],
+  },
+  DLY: {
+    label: 'DELAY', color: { border:'#06b6d4', bg:'#03131a', text:'#22d3ee' },
+    models: [
+      { id:'BBD Delay S',    name:'BBD Delay S',    base:'Analog BBD Delay (stereo)',     desc:'스테레오 아날로그 BBD 딜레이' },
+      { id:'Digital Delay S',name:'Digital Delay S',base:'Digital Delay (stereo)',        desc:'클리어한 스테레오 디지털 딜레이' },
+      { id:'Tape Delay S',   name:'Tape Delay S',   base:'Tape Echo Machine (stereo)',    desc:'빈티지 테이프 에코' },
+      { id:'Analog',         name:'Analog',         base:'Solid-state Tape Echo',         desc:'솔리드 스테이트 테이프 에코' },
+      { id:'Pure',           name:'Pure',           base:'Warm Analog Delay',             desc:'아날로그 느낌의 따뜻한 딜레이' },
+      { id:'Tape',           name:'Tape',           base:'Tape Echo',                     desc:'클래식 테이프 에코 효과' },
+      { id:'Ping Pong',      name:'Ping Pong',      base:'Stereo Ping-Pong Delay',        desc:'스테레오로 튀어다니는 핑퐁 딜레이' },
+      { id:'Slapback',       name:'Slapback',       base:'Classic Slapback Echo',         desc:'짧고 단일 반복의 슬랩백 에코' },
+      { id:'Sweep Echo',     name:'Sweep Echo',     base:'Filter-modulated Delay',        desc:'필터 모듈레이션 딜레이' },
+      { id:'Lofi Echo',      name:'Lofi Echo',      base:'Lo-fi Delay',                   desc:'로파이 반복음, 빈티지 느낌' },
+      { id:'Ice Delay',      name:'Ice Delay',      base:'Pitch-shifted Delay',           desc:'피치 시프트 딜레이' },
+      { id:'Ambience 1',     name:'Ambience 1',     base:'Multi-tap Ambience',            desc:'멀티탭 앰비언스' },
+      { id:'Ambience 2',     name:'Ambience 2',     base:'Clean Ambience',               desc:'깔끔한 앰비언스 딜레이' },
+    ],
+  },
+  RVB: {
+    label: 'REVERB', color: { border:'#10b981', bg:'#03130d', text:'#34d399' },
+    models: [
+      { id:'Room',       name:'Room',       base:'Room Reverb',             desc:'작은 방의 공간감' },
+      { id:'Hall',       name:'Hall',       base:'Concert Hall Reverb',     desc:'콘서트 홀 공간감' },
+      { id:'Church',     name:'Church',     base:'Church Reverb',           desc:'성당 공간감, 긴 디케이' },
+      { id:'Plate',      name:'Plate',      base:'Vintage Plate Reverberator',desc:'빈티지 플레이트 리버브' },
+      { id:'Spring',     name:'Spring',     base:'Spring Reverb',           desc:'클래식 스프링 리버브' },
+      { id:'Tube Spring',name:'Tube Spring',base:'Tube-driven Spring Reverb',desc:'튜브 구동 스프링 리버브' },
+      { id:'Studio',     name:'Studio',     base:'Recording Studio Reverb', desc:'레코딩 스튜디오 공간감' },
+      { id:'N-Star',     name:'N-Star',     base:'Custom Bright Reverb',    desc:'밝고 풍부한 리버브' },
+      { id:'Deepsea',    name:'Deepsea',    base:'Custom Deep Reverb',      desc:'깊고 거대한 리버브' },
+      { id:'Sweet Space',name:'Sweet Space',base:'Modulated Reverb',        desc:'모듈레이션 리버브' },
+      { id:'Shimmer',    name:'Shimmer',    base:'Shimmer Reverb',          desc:'shimmer 리버브, 피치 시프트 혼합' },
+    ],
+  },
+  EQ: {
+    label: 'EQ', color: { border:'#84cc16', bg:'#0a1300', text:'#a3e635' },
+    models: [
+      { id:'Guitar EQ 1',name:'Guitar EQ 1',base:'5-band Guitar EQ',        desc:'기타 전용 5밴드 EQ' },
+      { id:'Guitar EQ 2',name:'Guitar EQ 2',base:'5-band Guitar EQ alt',    desc:'기타 전용 5밴드 EQ (변형)' },
+      { id:'Mess EQ',    name:'Mess EQ',    base:'Mesa/Boogie 5-band EQ',   desc:'메사부기 5밴드 EQ' },
+      { id:'Hyper EQ',   name:'Hyper EQ',   base:'10-band Graphic EQ',      desc:'10밴드 그래픽 EQ' },
+    ],
+  },
+  NS: {
+    label: 'NOISE GATE', color: { border:'#6b7280', bg:'#0d0d0d', text:'#9ca3af' },
+    models: [
+      { id:'Gate 1', name:'Gate 1', base:'ISP Decimator',          desc:'ISP Decimator 기반 노이즈 게이트' },
+      { id:'Gate 2', name:'Gate 2', base:'Flexible Noise Gate',    desc:'어택/릴리즈 조절 가능 게이트' },
+      { id:'Gate 3', name:'Gate 3', base:'Inverse Expander Gate',  desc:'인버스 익스팬더 게이트' },
+    ],
+  },
+  WAH: {
+    label: 'WAH / FILTER', color: { border:'#f59e0b', bg:'#1c1200', text:'#fbbf24' },
+    models: [
+      { id:'T-Wah',      name:'T-Wah',      base:'Touch-sensitive Wah',     desc:'터치 감도 엔벨로프 필터' },
+      { id:'A-WAH',      name:'A-WAH',      base:'Auto Wah',                desc:'오토 와우, 다이나믹 반응' },
+      { id:'Step Filter',name:'Step Filter',base:'4-Step Auto Filter',      desc:'4단계 오토 필터' },
+    ],
+  },
+  PIT: {
+    label: 'PITCH', color: { border:'#ec4899', bg:'#1c0512', text:'#f472b6' },
+    models: [
+      { id:'OCTA',         name:'OCTA',         base:'Polyphonic Octave',         desc:'폴리포닉 옥타브 이펙트' },
+      { id:'Pitch',        name:'Pitch',        base:'Polyphonic Pitch Shifter',  desc:'폴리포닉 피치 시프터/하모나이저' },
+      { id:'Hammy',        name:'Hammy',        base:'Whammy-style Pitch Shifter',desc:'와미 스타일 피치 시프터' },
+      { id:'Harmonizer 1', name:'Harmonizer 1', base:'Mono Single-voice Harmonizer',desc:'모노 싱글 보이스 하모나이저' },
+    ],
+  },
+  SPX: {
+    label: 'SPECIAL FX', color: { border:'#f472b6', bg:'#1c0a18', text:'#fb7185' },
+    models: [
+      { id:'Ring Mod',   name:'Ring Mod',   base:'Ring Modulator',           desc:'링 모듈레이터' },
+      { id:'Saturate',   name:'Saturate',   base:'Tape Saturation',          desc:'빈티지 테이프 포화' },
+      { id:'Auto Swell', name:'Auto Swell', base:'Auto Swell (Violin-like)',  desc:'오토 스웰, 기타를 바이올린처럼' },
+      { id:'Bit Smash',  name:'Bit Smash',  base:'Bitcrusher',               desc:'비트크러셔/샘플 레이트 리듀서' },
+    ],
+  },
+};
+
+const FX_COLOR = Object.fromEntries(Object.entries(MODEL_DB).map(([k,v]) => [k, v.color]));
+const FX_LABEL = Object.fromEntries(Object.entries(MODEL_DB).map(([k,v]) => [k, v.label]));
+
+const INITIAL_PRESETS = [
+  {
+    id:'1', name:'HigeDan Glassy Clean', artist:'Official HIGE DANdism', song:'Subtitle',
+    tags:['clean','bright','J-Pop','chorus'], pickup:'Neck Split (2nd)', rating:5, isAI:false,
+    chain:[
+      { id:'p1c1', cat:'COMP', model:'COMP',       active:true,  params:{ Attack:30, Release:50, Ratio:40, Level:70 } },
+      { id:'p1c2', cat:'AMP',  model:'Dark Twin',   active:true,  params:{ Gain:22, Bass:50, Mid:60, Treble:68, Vol:75, Presence:55 } },
+      { id:'p1c3', cat:'CHO',  model:'G-Chorus',    active:true,  params:{ Rate:35, Depth:40, Mix:45 } },
+      { id:'p1c4', cat:'DLY',  model:'BBD Delay S', active:true,  params:{ Time:45, Feedback:30, Mix:25, HiCut:60 } },
+      { id:'p1c5', cat:'RVB',  model:'Plate',       active:true,  params:{ Decay:55, Pre:20, Mix:30 } },
+    ],
+  },
+  {
+    id:'2', name:'Vaundy Crunchy Edge', artist:'Vaundy', song:'Odoru Popeye',
+    tags:['crunch','drive','J-Rock','edge'], pickup:'Bridge Split (4th)', rating:4, isAI:false,
+    chain:[
+      { id:'p2c1', cat:'NS',  model:'Gate 1',    active:true,  params:{ Threshold:32, Release:38 } },
+      { id:'p2c2', cat:'DST', model:'Darktale',  active:true,  params:{ Gain:65, Tone:55, Level:70 } },
+      { id:'p2c3', cat:'AMP', model:'UK 800',    active:true,  params:{ Gain:55, Bass:45, Mid:60, Treble:58, Vol:70, Presence:60 } },
+      { id:'p2c4', cat:'CAB', model:'4x12 V30',  active:true,  params:{ HiCut:60, LoCut:40, Mix:100 } },
+      { id:'p2c5', cat:'EQ',  model:'Mess EQ',   active:true,  params:{ Lo:55, LMid:45, Mid:62, HMid:50, Hi:55 } },
+      { id:'p2c6', cat:'RVB', model:'Room',      active:true,  params:{ Decay:30, Mix:18 } },
+    ],
+  },
+  {
+    id:'3', name:'YOASOBI Electric Night', artist:'YOASOBI', song:'Idol',
+    tags:['clean','pop','sparkle','J-Pop'], pickup:'Mid (3rd)', rating:4, isAI:false,
+    chain:[
+      { id:'p3c1', cat:'COMP', model:'S-Comp',        active:true,  params:{ Threshold:40, Ratio:30, Gain:62, Attack:20, Release:45 } },
+      { id:'p3c2', cat:'AMP',  model:'J-120 CL',       active:true,  params:{ Gain:18, Bass:55, Mid:50, Treble:72, Vol:76, Presence:50 } },
+      { id:'p3c3', cat:'CHO',  model:'A-Chorus',       active:false, params:{ Rate:25, Depth:30, Mix:40 } },
+      { id:'p3c4', cat:'DLY',  model:'Digital Delay S',active:true,  params:{ Time:55, Feedback:25, Mix:20 } },
+      { id:'p3c5', cat:'RVB',  model:'Hall',           active:true,  params:{ Decay:60, Pre:15, Mix:35 } },
+    ],
+  },
+  {
+    id:'4', name:'Kenshi Yonezu Arena Lead', artist:'Kenshi Yonezu', song:'Lemon',
+    tags:['lead','sustain','arena','overdrive'], pickup:'Bridge HB', rating:5, isAI:false,
+    chain:[
+      { id:'p4c1', cat:'NS',  model:'Gate 2',      active:true,  params:{ Threshold:35, Release:40 } },
+      { id:'p4c2', cat:'OD',  model:'Green OD',    active:true,  params:{ Drive:55, Tone:50, Level:65 } },
+      { id:'p4c3', cat:'AMP', model:'UK 800',      active:true,  params:{ Gain:72, Bass:50, Mid:62, Treble:55, Vol:70, Presence:65 } },
+      { id:'p4c4', cat:'CAB', model:'4x12 GRN',    active:true,  params:{ HiCut:55, Mix:100 } },
+      { id:'p4c5', cat:'DLY', model:'Tape Delay S',active:true,  params:{ Time:50, Feedback:35, Mix:28, HiCut:55 } },
+      { id:'p4c6', cat:'RVB', model:'Spring',      active:true,  params:{ Decay:40, Mix:22 } },
+    ],
+  },
+  {
+    id:'5', name:'Suda51 Fuzz Wall', artist:'Suda51 / Punk Style', song:'Heavy Distortion',
+    tags:['fuzz','heavy','punk','lead'], pickup:'Bridge HB', rating:4, isAI:false,
+    chain:[
+      { id:'p5c1', cat:'NS',  model:'Gate 1',    active:true,  params:{ Threshold:38, Release:35 } },
+      { id:'p5c2', cat:'DST', model:'Lazaro',    active:true,  params:{ Sustain:75, Tone:45, Volume:70 } },
+      { id:'p5c3', cat:'AMP', model:'Mess DualM',active:true,  params:{ Gain:80, Bass:55, Mid:45, Treble:60, Vol:70, Presence:70 } },
+      { id:'p5c4', cat:'CAB', model:'4x12 Mesa', active:true,  params:{ HiCut:50, Mix:100 } },
+      { id:'p5c5', cat:'RVB', model:'Room',      active:true,  params:{ Decay:25, Mix:12 } },
+    ],
+  },
+];
+
+function aiGenerate(query) {
+  const q = query.toLowerCase();
+  const uid = `ai-${Date.now()}`;
+  const make = (name, artist, tags, pickup, chain) => ({
+    id:uid, name, artist, song:'AI Generated',
+    tags:[...tags,'AI'], pickup, rating:0, isAI:true,
+    chain: chain.map((b,i) => ({ ...b, id:`${uid}-${i}` })),
+  });
+  if (q.includes('hige') || q.includes('higedan'))
+    return make('AI: HigeDan Studio Clean','Official HIGE DANdism',['clean','bright','J-Pop'],'Neck Split (2nd)',[
+      { cat:'COMP', model:'COMP4',       active:true,  params:{ Attack:28, Release:48, Ratio:38, Level:72 } },
+      { cat:'AMP',  model:'Dark Twin',   active:true,  params:{ Gain:20, Bass:52, Mid:58, Treble:70, Vol:75, Presence:52 } },
+      { cat:'CHO',  model:'G-Chorus',    active:true,  params:{ Rate:32, Depth:38, Mix:42 } },
+      { cat:'DLY',  model:'BBD Delay S', active:true,  params:{ Time:48, Feedback:28, Mix:22, HiCut:62 } },
+      { cat:'RVB',  model:'Plate',       active:true,  params:{ Decay:52, Pre:18, Mix:28 } },
+    ]);
+  if (q.includes('vaundy'))
+    return make('AI: Vaundy Rhythm Drive','Vaundy',['crunch','drive','J-Rock'],'Bridge Split (4th)',[
+      { cat:'NS',  model:'Gate 1',   active:true, params:{ Threshold:32, Release:38 } },
+      { cat:'OD',  model:'Force',    active:true, params:{ Drive:60, Tone:58, Level:68 } },
+      { cat:'AMP', model:'UK 800',   active:true, params:{ Gain:52, Bass:42, Mid:60, Treble:62, Vol:72, Presence:60 } },
+      { cat:'CAB', model:'4x12 V30', active:true, params:{ HiCut:58, LoCut:42, Mix:100 } },
+      { cat:'RVB', model:'Room',     active:true, params:{ Decay:32, Mix:18 } },
+    ]);
+  if (q.includes('yoasobi'))
+    return make('AI: YOASOBI Sparkle Pop','YOASOBI',['clean','sparkle','J-Pop'],'Mid (3rd)',[
+      { cat:'COMP', model:'S-Comp',         active:true, params:{ Threshold:38, Ratio:28, Gain:62, Attack:18, Release:42 } },
+      { cat:'AMP',  model:'J-120 CL',       active:true, params:{ Gain:16, Bass:55, Mid:48, Treble:74, Vol:78, Presence:48 } },
+      { cat:'CHO',  model:'B-Chorus',       active:true, params:{ Rate:28, Depth:35, Mix:38 } },
+      { cat:'DLY',  model:'Digital Delay S',active:true, params:{ Time:52, Feedback:22, Mix:18 } },
+      { cat:'RVB',  model:'Sweet Space',    active:true, params:{ Decay:55, Mix:32 } },
+    ]);
+  if (q.includes('kenshi') || q.includes('yonezu'))
+    return make('AI: Kenshi Yonezu Arena','Kenshi Yonezu',['lead','sustain','arena'],'Bridge HB',[
+      { cat:'NS',  model:'Gate 2',      active:true, params:{ Threshold:35, Release:42 } },
+      { cat:'OD',  model:'Green OD',    active:true, params:{ Drive:58, Tone:52, Level:65 } },
+      { cat:'AMP', model:'Flagman 1',   active:true, params:{ Gain:68, Bass:48, Mid:62, Treble:58, Vol:70, Presence:65 } },
+      { cat:'CAB', model:'4x12 GRN',    active:true, params:{ HiCut:55, Mix:100 } },
+      { cat:'DLY', model:'Tape Delay S',active:true, params:{ Time:50, Feedback:32, Mix:26, HiCut:55 } },
+      { cat:'RVB', model:'N-Star',      active:true, params:{ Decay:45, Pre:15, Mix:28 } },
+    ]);
+  if (q.includes('mayer') || q.includes('blues'))
+    return make('AI: John Mayer Blues','John Mayer',['blues','clean','expressive'],'Neck (1st)',[
+      { cat:'COMP', model:'COMP',        active:true, params:{ Attack:35, Release:55, Ratio:35, Level:68 } },
+      { cat:'OD',   model:'Blues Master',active:true, params:{ Drive:45, Tone:55, Level:62 } },
+      { cat:'AMP',  model:'Tweedy',      active:true, params:{ Gain:35, Bass:55, Mid:58, Treble:62, Vol:70, Presence:55 } },
+      { cat:'DLY',  model:'Tape',        active:true, params:{ Time:38, Feedback:28, Mix:20 } },
+      { cat:'RVB',  model:'Spring',      active:true, params:{ Decay:45, Mix:28 } },
+    ]);
+  if (q.includes('metallica') || q.includes('metal'))
+    return make('AI: Metallica Heaviness','Metallica',['metal','heavy','tight'],'Bridge HB',[
+      { cat:'NS',  model:'Gate 1',    active:true, params:{ Threshold:42, Release:30 } },
+      { cat:'OD',  model:'Swarm',     active:true, params:{ Drive:65, Tone:50, Level:70 } },
+      { cat:'AMP', model:'Mess DualV',active:true, params:{ Gain:85, Bass:55, Mid:40, Treble:65, Vol:72, Presence:70 } },
+      { cat:'CAB', model:'4x12 Mesa', active:true, params:{ HiCut:52, Mix:100 } },
+      { cat:'EQ',  model:'Hyper EQ',  active:true, params:{ Lo:52, LMid:42, Mid:38, HMid:55, Hi:58 } },
+      { cat:'RVB', model:'Studio',    active:true, params:{ Decay:25, Mix:10 } },
+    ]);
+  return make(`AI: ${query} Tone`,query,['custom'],'Mid (3rd)',[
+    { cat:'COMP', model:'COMP',       active:true, params:{ Attack:30, Release:40, Level:65, Ratio:35 } },
+    { cat:'OD',   model:'Blues OD',   active:true, params:{ Drive:45, Tone:50, Level:60 } },
+    { cat:'AMP',  model:'Dark Twin',  active:true, params:{ Gain:30, Bass:50, Mid:55, Treble:62, Vol:70, Presence:52 } },
+    { cat:'DLY',  model:'BBD Delay S',active:true, params:{ Time:42, Feedback:25, Mix:20 } },
+    { cat:'RVB',  model:'Hall',       active:true, params:{ Decay:50, Mix:28 } },
+  ]);
+}
+
+function InteractiveKnob({ label, value, color, onChange, size='md' }) {
+  const [editing, setEditing] = useState(false);
+  const [inputStr, setInputStr] = useState('');
+  const dragging = useRef(false);
+  const startY   = useRef(0);
+  const startVal = useRef(value);
+  const inputRef = useRef(null);
+  const dim    = size==='lg' ? 72 : 56;
+  const R      = size==='lg' ? 27 : 21;
+  const Cx     = dim/2;
+  const toRad  = deg => (deg-90)*(Math.PI/180);
+  const START  = -135, ARC = 270;
+  const valDeg = START+(value/100)*ARC;
+  const arcPath = (from, to) => {
+    const x1=Cx+R*Math.cos(toRad(from)), y1=Cx+R*Math.sin(toRad(from));
+    const x2=Cx+R*Math.cos(toRad(to)),   y2=Cx+R*Math.sin(toRad(to));
+    return `M${x1} ${y1} A${R} ${R} 0 ${Math.abs(to-from)>180?1:0} 1 ${x2} ${y2}`;
+  };
+  const onMouseDown = useCallback(e => {
+    dragging.current=true; startY.current=e.clientY; startVal.current=value; e.preventDefault();
+  }, [value]);
+  useEffect(() => {
+    const onMove = e => {
+      if (!dragging.current) return;
+      onChange(Math.max(0, Math.min(100, startVal.current+Math.round((startY.current-e.clientY)/2))));
+    };
+    const onUp = () => { dragging.current=false; };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+  }, [onChange]);
+  const openEdit = () => { setInputStr(String(value)); setEditing(true); };
+  useEffect(() => { if (editing && inputRef.current) inputRef.current.focus(); }, [editing]);
+  const commitEdit = () => {
+    const n = parseInt(inputStr, 10);
+    if (!isNaN(n)) onChange(Math.max(0, Math.min(100, n)));
+    setEditing(false);
+  };
+  const ticks = Array.from({length:13}, (_,i) => {
+    const angle = START+(i/12)*ARC;
+    const inner=R+2, outer=R+5, ra=toRad(angle);
+    return { x1:Cx+inner*Math.cos(ra), y1:Cx+inner*Math.sin(ra), x2:Cx+outer*Math.cos(ra), y2:Cx+outer*Math.sin(ra), lit:i<=Math.round((value/100)*12) };
+  });
+  const knobR = size==='lg' ? 14 : 11;
+  return (
+    <div className="flex flex-col items-center gap-1.5 select-none">
+      <div className="relative cursor-ns-resize" onMouseDown={onMouseDown}>
+        <svg width={dim} height={dim} viewBox={`0 0 ${dim} ${dim}`}>
+          {ticks.map((t,i) => <line key={i} x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2} stroke={t.lit?color:'#1f2937'} strokeWidth="1.5" strokeLinecap="round"/>)}
+          <path d={arcPath(START,START+ARC)} fill="none" stroke="#111827" strokeWidth="3" strokeLinecap="round"/>
+          {value>0 && <path d={arcPath(START,valDeg)} fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" style={{filter:`drop-shadow(0 0 3px ${color}88)`}}/>}
+          <circle cx={Cx} cy={Cx} r={knobR+2} fill="#161616" stroke="#2a2a2a" strokeWidth="1"/>
+          <circle cx={Cx} cy={Cx} r={knobR}   fill="url(#kg)" stroke="#333" strokeWidth="1"/>
+          <circle cx={Cx+(knobR-3)*Math.cos(toRad(valDeg))} cy={Cx+(knobR-3)*Math.sin(toRad(valDeg))} r="2" fill={color} style={{filter:`drop-shadow(0 0 2px ${color})`}}/>
+          <defs><radialGradient id="kg" cx="40%" cy="35%" r="65%"><stop offset="0%" stopColor="#2a2a2a"/><stop offset="100%" stopColor="#0d0d0d"/></radialGradient></defs>
+        </svg>
+      </div>
+      <span className="text-[8px] uppercase tracking-widest leading-none" style={{color:color+'aa'}}>{label}</span>
+      {editing ? (
+        <input ref={inputRef} className="w-10 text-center text-xs font-mono rounded px-1 py-0.5 border outline-none"
+          style={{background:'#0a0a0a',borderColor:color,color}}
+          value={inputStr} onChange={e=>setInputStr(e.target.value)}
+          onBlur={commitEdit} onKeyDown={e=>{if(e.key==='Enter')commitEdit();if(e.key==='Escape')setEditing(false);}}/>
+      ) : (
+        <button onDoubleClick={openEdit} className="text-xs font-mono px-1.5 py-0.5 rounded border border-transparent hover:border-current transition-colors" style={{color}}>{value}</button>
+      )}
+    </div>
+  );
+}
+
+function SlideInPanel({ block, dbEntry, color, onClose, onParamChange, onToggleActive, onReset }) {
+  const isOpen = !!block;
+  return (
+    <>
+      <div onClick={onClose} className="fixed inset-0 z-30 transition-opacity duration-300"
+        style={{background:'rgba(0,0,0,0.45)',opacity:isOpen?1:0,pointerEvents:isOpen?'auto':'none'}}/>
+      <div className="fixed top-0 right-0 h-full z-40 flex flex-col border-l border-[#1e1e1e] overflow-hidden"
+        style={{width:'360px',background:'#080808',transform:isOpen?'translateX(0)':'translateX(100%)',transition:'transform 0.28s cubic-bezier(0.4,0,0.2,1)',boxShadow:isOpen?'-8px 0 32px rgba(0,0,0,0.6)':'none'}}>
+        {block && (
+          <>
+            <div className="flex-shrink-0 border-b px-5 py-4" style={{borderColor:`${color.border}30`}}>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-8 rounded-full" style={{background:color.border}}/>
+                  <div>
+                    <div className="text-[8px] uppercase tracking-[0.25em]" style={{color:color.text+'80'}}>{FX_LABEL[block.cat]??block.cat}</div>
+                    <div className="text-base font-black text-white leading-tight">{block.model}</div>
+                  </div>
+                </div>
+                <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg border border-[#1e1e1e] text-gray-600 hover:text-gray-300 transition-colors"><X size={14}/></button>
+              </div>
+              {dbEntry && (
+                <div className="rounded-lg px-3 py-2 mb-3 text-[9px]" style={{background:color.bg,border:`1px solid ${color.border}25`}}>
+                  <span style={{color:color.text+'80'}}>BASED ON  </span>
+                  <span className="font-bold" style={{color:color.text}}>{dbEntry.base}</span>
+                  <div className="text-gray-600 mt-0.5">{dbEntry.desc}</div>
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <button onClick={onToggleActive} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border font-bold text-[10px] uppercase tracking-wider transition-all"
+                  style={block.active?{background:`${color.border}18`,borderColor:`${color.border}50`,color:color.border}:{background:'#111',borderColor:'#222',color:'#4b5563'}}>
+                  <Power size={11}/>{block.active?'ACTIVE':'BYPASS'}
+                </button>
+                <button onClick={onReset} className="w-9 h-9 flex items-center justify-center rounded-lg border border-[#1e1e1e] text-gray-700 hover:text-gray-400 transition-colors"><RotateCcw size={13}/></button>
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto px-5 py-5">
+              <div className="text-[8px] text-gray-700 uppercase tracking-widest mb-4 flex items-center gap-1.5"><Sliders size={9}/> PARAMETERS</div>
+              <div className="grid grid-cols-3 gap-x-4 gap-y-6">
+                {Object.entries(block.params).map(([key,val]) => (
+                  <div key={key} className="flex flex-col items-center gap-1">
+                    <InteractiveKnob label={key} value={val} color={color.border} size="lg" onChange={v=>onParamChange(key,v)}/>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <button onClick={()=>onParamChange(key,Math.max(0,val-1))} className="w-5 h-5 flex items-center justify-center rounded border border-[#1e1e1e] text-gray-600 hover:text-gray-300 transition-colors"><Minus size={9}/></button>
+                      <button onClick={()=>onParamChange(key,Math.min(100,val+1))} className="w-5 h-5 flex items-center justify-center rounded border border-[#1e1e1e] text-gray-600 hover:text-gray-300 transition-colors"><Plus size={9}/></button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-6 rounded-xl p-4 border" style={{background:'#050505',borderColor:'#151515'}}>
+                <div className="text-[8px] text-gray-700 uppercase tracking-widest mb-3 flex items-center gap-1.5"><Activity size={9}/> LEVEL</div>
+                <div className="space-y-2">
+                  {Object.entries(block.params).map(([k,v]) => (
+                    <div key={k} className="flex items-center gap-3">
+                      <span className="text-[8px] text-gray-600 uppercase w-14 text-right flex-shrink-0">{k}</span>
+                      <div className="flex-1 h-1.5 bg-[#0d0d0d] rounded-full overflow-hidden">
+                        <div className="h-full rounded-full transition-all duration-200" style={{width:`${v}%`,background:`linear-gradient(90deg,${color.border}55,${color.border})`}}/>
+                      </div>
+                      <span className="text-[8px] font-mono w-6 text-right flex-shrink-0" style={{color:color.text}}>{v}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="mt-4 text-[8px] text-gray-800 text-center space-y-0.5">
+                <div>↕ 드래그로 값 조절</div><div>더블클릭 → 숫자 직접 입력</div><div>+/- 버튼 → 1단계 미세 조정</div>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </>
+  );
+}
+
+function ChainBlock({ block, isSelected, onClick }) {
+  const col = FX_COLOR[block.cat]??FX_COLOR.EQ;
+  return (
+    <div className="flex items-center gap-1 flex-shrink-0">
+      <button onClick={onClick}
+        style={{background:isSelected?col.bg:'#0d0d0d',borderColor:isSelected?col.border:`${col.border}30`,boxShadow:isSelected?`0 0 12px ${col.border}40`:'none',opacity:block.active?1:0.35,transform:isSelected?'scale(1.07)':'scale(1)'}}
+        className="relative min-w-[72px] p-2.5 rounded-xl border-2 transition-all duration-150 text-center">
+        <div className="text-[7px] font-black tracking-widest mb-1 uppercase" style={{color:col.text}}>{FX_LABEL[block.cat]??block.cat}</div>
+        <Power size={10} className="mx-auto mb-1" style={{color:block.active?col.border:'#374151'}}/>
+        <div className="text-[7px] truncate" style={{color:col.text+'aa'}}>{block.model}</div>
+      </button>
+      <ChevronRight size={10} className="text-gray-800"/>
+    </div>
+  );
+}
+
+function ModelBrowser({ onClose }) {
+  const [q, setQ] = useState('');
+  const [openCat, setOpenCat] = useState(null);
+  const results = useMemo(() => {
+    if (!q.trim()) return null;
+    const lq = q.toLowerCase(), out = [];
+    Object.entries(MODEL_DB).forEach(([cat,data]) => {
+      data.models.forEach(m => {
+        if (m.name.toLowerCase().includes(lq)||m.base.toLowerCase().includes(lq)||m.desc.toLowerCase().includes(lq)||cat.toLowerCase().includes(lq))
+          out.push({cat,...m,color:data.color,label:data.label});
+      });
+    });
+    return out;
+  }, [q]);
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+      <div className="w-full max-w-2xl max-h-[80vh] flex flex-col rounded-2xl border border-[#222] overflow-hidden" style={{background:'#080808'}}>
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#181818]">
+          <div className="flex items-center gap-2">
+            <BookOpen size={14} className="text-blue-400"/>
+            <span className="text-sm font-black text-white">GP-200JR Model Browser</span>
+            <span className="text-[8px] text-gray-600 border border-[#222] px-1.5 py-0.5 rounded">Firmware V1.8.0</span>
+          </div>
+          <button onClick={onClose} className="text-gray-600 hover:text-gray-400"><X size={16}/></button>
+        </div>
+        <div className="px-5 py-3 border-b border-[#141414]">
+          <div className="relative">
+            <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600"/>
+            <input autoFocus className="w-full bg-[#0d0d0d] border border-[#1c1c1c] rounded-xl pl-8 pr-3 py-2.5 text-xs text-gray-300 placeholder-gray-700 focus:outline-none focus:border-blue-600"
+              placeholder="모델명 / 원본 기어명 / 사운드 특징 검색..." value={q} onChange={e=>setQ(e.target.value)}/>
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto px-5 py-3">
+          {results ? (
+            results.length===0 ? <div className="text-center text-gray-700 text-sm py-8">검색 결과가 없습니다</div> : (
+              <div className="space-y-1.5">
+                {results.map((m,i) => (
+                  <div key={i} className="flex items-start gap-3 p-2.5 rounded-xl border hover:bg-[#0f0f0f]" style={{borderColor:`${m.color.border}20`}}>
+                    <div className="flex-shrink-0 px-2 py-1 rounded-lg text-center min-w-[52px]" style={{background:m.color.bg,border:`1px solid ${m.color.border}44`}}>
+                      <div className="text-[7px] uppercase tracking-wider" style={{color:m.color.text}}>{m.label}</div>
+                      <div className="text-[9px] font-bold mt-0.5" style={{color:m.color.text}}>{m.name}</div>
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-[10px] text-gray-400 font-mono">{m.base}</div>
+                      <div className="text-[9px] text-gray-600 mt-0.5">{m.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+          ) : (
+            <div className="space-y-1">
+              {Object.entries(MODEL_DB).map(([cat,data]) => (
+                <div key={cat} className="rounded-xl overflow-hidden border border-[#141414]">
+                  <button onClick={()=>setOpenCat(openCat===cat?null:cat)} className="w-full flex items-center justify-between px-3 py-2 hover:bg-[#0f0f0f]">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full" style={{background:data.color.border}}/>
+                      <span className="text-[10px] font-bold text-gray-300">{data.label}</span>
+                      <span className="text-[8px] text-gray-700">{data.models.length} models</span>
+                    </div>
+                    <ChevronDown size={12} className="text-gray-700" style={{transform:openCat===cat?'rotate(180deg)':'rotate(0deg)'}}/>
+                  </button>
+                  {openCat===cat && (
+                    <div className="border-t border-[#141414] divide-y divide-[#0f0f0f]">
+                      {data.models.map(m => (
+                        <div key={m.id} className="flex items-start gap-3 px-3 py-2 hover:bg-[#0a0a0a]">
+                          <span className="text-[9px] font-bold w-28 flex-shrink-0" style={{color:data.color.text}}>{m.name}</span>
+                          <span className="text-[8px] text-gray-600 min-w-0"><span className="text-gray-500">{m.base}</span>{' — '}{m.desc}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const FIRMWARE='V1.8.0', DEVICE='Valeton GP-200JR', GUITAR='Schecter Sunset-6 Extreme';
+function buildBackupJSON(p) { return JSON.stringify({_meta:{app:'TONE CLOUD GP-200JR Edition',device:DEVICE,firmware:FIRMWARE,guitar:GUITAR,exported:new Date().toISOString(),total:p.length},presets:p},null,2); }
+function buildPresetJSON(p) { return JSON.stringify({_meta:{device:DEVICE,firmware:FIRMWARE,exported:new Date().toISOString()},preset:p},null,2); }
+function buildReadableText(presets) {
+  const SEP='═'.repeat(54), sep2='─'.repeat(54), date=new Date().toLocaleString('ko-KR');
+  const lines=[SEP,'  TONE CLOUD GP-200JR  —  PRESET BACKUP',`  Device   : ${DEVICE}  (${FIRMWARE})`,`  Guitar   : ${GUITAR}`,`  Exported : ${date}`,`  Presets  : ${presets.length} patches`,SEP,''];
+  presets.forEach((p,idx) => {
+    const stars='★'.repeat(p.rating)+'☆'.repeat(5-p.rating);
+    lines.push(`PATCH ${String(idx+1).padStart(2,'0')}  ${p.name}${p.isAI?'  [AI]':''}`);
+    lines.push(`  Artist  : ${p.artist}${p.song?`  /  "${p.song}"`:''}`);
+    lines.push(`  Pickup  : ${p.pickup}   Rating: ${stars}`);
+    lines.push(`  Tags    : ${p.tags.map(t=>`#${t}`).join('  ')}`);
+    lines.push(sep2); lines.push('  SIGNAL CHAIN:');
+    p.chain.forEach((b,bi) => {
+      const label=FX_LABEL[b.cat]??b.cat, status=b.active?'ON ':'OFF';
+      const paramStr=Object.entries(b.params).map(([k,v])=>`${k.toUpperCase()}:${String(v).padStart(3)}`).join('  ');
+      lines.push(`  [${bi+1}] [${status}] ${label.padEnd(12)} ${b.model.padEnd(18)} ${paramStr}`);
+    });
+    lines.push('');
+  });
+  lines.push(SEP,'  END OF BACKUP FILE',SEP);
+  return lines.join('\n');
+}
+function triggerDownload(content, filename, mime='application/json') {
+  const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([content],{type:mime})),download:filename});
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(a.href);
+}
+
+function ExportModal({ presets, active, onClose }) {
+  const [mode,setMode]=useState('all'), [preview,setPreview]=useState(false), [done,setDone]=useState(false);
+  const MODES=[
+    {id:'all',icon:'📦',title:'전체 백업 (JSON)',desc:`모든 프리셋 ${presets.length}개 완전한 백업`,ext:'.json'},
+    {id:'current',icon:'🎸',title:'현재 프리셋 (JSON)',desc:`"${active.name}" 단일 프리셋`,ext:'.json'},
+    {id:'text',icon:'📄',title:'텍스트 참조 파일 (.txt)',desc:'사람이 읽기 좋은 형식 — 기기 앞에서 참조용',ext:'.txt'},
+  ];
+  const previewContent = useMemo(() => {
+    if (mode==='all') return buildBackupJSON(presets);
+    if (mode==='current') return buildPresetJSON(active);
+    return buildReadableText(presets);
+  }, [mode,presets,active]);
+  const handleDownload = () => {
+    const ts=new Date().toISOString().slice(0,10);
+    if (mode==='all') triggerDownload(previewContent,`ToneCloud_Backup_${ts}.json`);
+    else if (mode==='current') triggerDownload(previewContent,`${active.name.replace(/[^a-zA-Z0-9가-힣_-]/g,'_')}_${ts}.json`);
+    else triggerDownload(previewContent,`ToneCloud_Backup_${ts}.txt`,'text/plain;charset=utf-8');
+    setDone(true); setTimeout(()=>{setDone(false);onClose();},1400);
+  };
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+      <div className="w-full max-w-lg flex flex-col rounded-2xl border border-[#222] overflow-hidden" style={{background:'#080808',maxHeight:'90vh'}}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#181818]">
+          <div className="flex items-center gap-2.5">
+            <div className="bg-blue-600 p-1.5 rounded-lg"><Download size={13} className="text-white"/></div>
+            <div><div className="text-sm font-black text-white">데이터 내보내기</div><div className="text-[8px] text-gray-600 uppercase tracking-widest mt-0.5">{DEVICE} · {FIRMWARE}</div></div>
+          </div>
+          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg border border-[#222] text-gray-600 hover:text-gray-300"><X size={13}/></button>
+        </div>
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+          <div className="text-[8px] text-gray-700 uppercase tracking-widest mb-1">내보내기 형식 선택</div>
+          {MODES.map(m => (
+            <button key={m.id} onClick={()=>{setMode(m.id);setPreview(false);}} className="w-full flex items-start gap-3 p-3.5 rounded-xl border text-left transition-all"
+              style={mode===m.id?{background:'#0d1f3c',borderColor:'#3b82f6'}:{background:'#0d0d0d',borderColor:'#1a1a1a'}}>
+              <span className="text-xl flex-shrink-0">{m.icon}</span>
+              <div><div className={`text-xs font-bold ${mode===m.id?'text-blue-400':'text-gray-300'}`}>{m.title}<span className="ml-2 font-mono text-[8px] opacity-60">{m.ext}</span></div><div className="text-[9px] text-gray-600 mt-0.5">{m.desc}</div></div>
+            </button>
+          ))}
+          <button onClick={()=>setPreview(v=>!v)} className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-[#1a1a1a] text-[10px] text-gray-600 hover:text-gray-400">
+            <span>파일 미리보기</span><ChevronDown size={12} style={{transform:preview?'rotate(180deg)':'rotate(0deg)'}}/>
+          </button>
+          {preview && <pre className="text-[8px] text-gray-500 font-mono rounded-xl border border-[#141414] p-3 overflow-auto" style={{background:'#040404',maxHeight:'200px',whiteSpace:'pre-wrap',wordBreak:'break-all'}}>{previewContent.slice(0,2000)}{previewContent.length>2000?'\n… (이하 생략)':''}</pre>}
+        </div>
+        <div className="flex items-center gap-3 px-5 py-4 border-t border-[#181818]">
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-[#222] text-gray-600 hover:text-gray-300 text-xs font-bold">취소</button>
+          <button onClick={handleDownload} disabled={done} className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-black"
+            style={done?{background:'#14532d',color:'#4ade80',border:'1px solid #22c55e44'}:{background:'#2563eb',color:'white'}}>
+            {done?<>✓ 다운로드 완료</>:<><Download size={13}/> 다운로드</>}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const GAIN_LEVELS=['Clean','Light Crunch','Crunch','High Gain','Metal'];
+const BRIGHT_LEVELS=['Dark','Warm','Neutral','Bright','Glassy'];
+const SPACE_LEVELS=['Dry','Subtle','Moderate','Wet','Ambient'];
+const GENRE_LIST=['J-Pop','J-Rock','Blues','Metal','Funk','Jazz','Pop','Punk','Country','R&B'];
+const FX_TOGGLES=[{id:'comp',label:'Compressor',cat:'COMP'},{id:'chorus',label:'Chorus',cat:'CHO'},{id:'flanger',label:'Flanger',cat:'FLG'},{id:'phaser',label:'Phaser',cat:'PHS'},{id:'delay',label:'Delay',cat:'DLY'},{id:'reverb',label:'Reverb',cat:'RVB'}];
+const DELAY_TYPES=['BBD Delay S','Tape Delay S','Digital Delay S','Slapback','Ping Pong','Pure'];
+const REVERB_TYPES=['Room','Hall','Plate','Spring','Shimmer','Sweet Space'];
+
+function wizardGenerate({ artist, song, genres, gainIdx, brightIdx, spaceIdx, fxOn, delayModel, reverbModel }) {
+  const id=`wiz-${Date.now()}`, chain=[];
+  if (gainIdx>=2||fxOn.includes('ns')) chain.push({cat:'NS',model:'Gate 1',active:true,params:{Threshold:26+gainIdx*5,Release:38}});
+  if (fxOn.includes('comp')||gainIdx<=1) chain.push({cat:'COMP',model:gainIdx===0?'COMP4':'COMP',active:true,params:{Attack:22+gainIdx*4,Release:44,Ratio:28+gainIdx*5,Level:68}});
+  const isBlues=genres.includes('Blues')||genres.includes('Jazz'), isJPop=genres.includes('J-Pop')||genres.includes('Pop'), isMetal=genres.includes('Metal')||genres.includes('Punk');
+  if (gainIdx===1) chain.push({cat:'OD',model:isBlues?'Blues Master':isJPop?'TaiChi OD':'Green OD',active:true,params:{Drive:32+brightIdx*5,Tone:44+brightIdx*7,Level:64}});
+  else if (gainIdx===2) chain.push({cat:'OD',model:isBlues?'Blues OD':isMetal?'Revolt':'Force',active:true,params:{Drive:52+brightIdx*3,Tone:50+brightIdx*5,Level:68}});
+  else if (gainIdx>=3) chain.push({cat:'OD',model:isMetal?'Swarm':'Precise OD',active:true,params:{Drive:58,Tone:50+brightIdx*4,Level:72}});
+  const AMP_TABLE=[isJPop?'J-120 CL':isBlues?'Tweedy':'Dark Twin',isJPop?'Foxy 30N':isBlues?'UK 45':'Match OD',isBlues?'UK SLP':isMetal?'Flagman 1':'UK 800',isMetal?'Mess DualV':'EV 51',isMetal?'Mess DualM':'Eagle 120'];
+  const treble=Math.max(25,Math.min(85,[55,58,54,51,48][gainIdx]+(brightIdx-2)*9));
+  const mid=Math.max(25,Math.min(80,[54,55,58,54,46][gainIdx]+(brightIdx-2)*3));
+  const bass=Math.max(25,Math.min(80,[52,48,48,52,56][gainIdx]-(brightIdx-2)*4));
+  chain.push({cat:'AMP',model:AMP_TABLE[gainIdx],active:true,params:{Gain:[16,34,58,74,88][gainIdx],Bass:bass,Mid:mid,Treble:treble,Vol:70,Presence:Math.max(30,Math.min(80,50+(brightIdx-2)*7))}});
+  if (gainIdx>=2) chain.push({cat:'CAB',model:isMetal?'4x12 Mesa':gainIdx===2?'4x12 GRN':'4x12 V30',active:true,params:{HiCut:58-gainIdx*2,LoCut:34+gainIdx*2,Mix:100}});
+  if (gainIdx>=3||(gainIdx>=2&&isMetal)) chain.push({cat:'EQ',model:'Mess EQ',active:true,params:{Lo:52,LMid:40+(brightIdx-2)*3,Mid:42+(brightIdx-2)*4,HMid:55,Hi:54+(brightIdx-2)*4}});
+  if (fxOn.includes('chorus')) chain.push({cat:'CHO',model:brightIdx>=3?'G-Chorus':'A-Chorus',active:true,params:{Rate:28+spaceIdx*5,Depth:gainIdx<=1?42:25,Mix:32+spaceIdx*4}});
+  if (fxOn.includes('flanger')) chain.push({cat:'FLG',model:'Jet',active:true,params:{Rate:30,Depth:45,Feedback:38,Mix:32}});
+  if (fxOn.includes('phaser')) chain.push({cat:'PHS',model:'O-Phase',active:true,params:{Rate:35,Depth:50,Mix:38}});
+  if (fxOn.includes('delay')||spaceIdx>=2) chain.push({cat:'DLY',model:delayModel??DELAY_TYPES[Math.min(spaceIdx,5)],active:true,params:{Time:32+spaceIdx*13,Feedback:Math.min(55,16+spaceIdx*9),Mix:Math.min(44,10+spaceIdx*8)}});
+  if (fxOn.includes('reverb')||spaceIdx>=1) chain.push({cat:'RVB',model:reverbModel??(gainIdx>=3?'Room':REVERB_TYPES[Math.min(spaceIdx+1,5)]),active:true,params:{Decay:Math.min(72,25+spaceIdx*13),Mix:Math.min(52,10+spaceIdx*9)}});
+  const gainName=GAIN_LEVELS[gainIdx];
+  const name=artist&&song?`Wizard: ${artist} — ${song}`:artist?`Wizard: ${artist} ${gainName}`:`Wizard: ${gainName} / ${BRIGHT_LEVELS[brightIdx]}`;
+  return {id,name,artist:artist||'Custom',song:song||'Wizard',tags:[gainName.toLowerCase().replace(' ','-'),...genres.slice(0,3)],pickup:['Neck (1st)','Neck Split (2nd)','Mid (3rd)','Bridge Split (4th)','Bridge HB'][Math.min(gainIdx+1,4)],rating:0,isAI:true,chain:chain.map((b,i)=>({...b,id:`${id}-${i}`}))};
+}
+
+function ToneWizardModal({ onClose, onSave }) {
+  const [step,setStep]=useState(0);
+  const [artist,setArtist]=useState(''), [song,setSong]=useState(''), [genres,setGenres]=useState([]);
+  const [gainIdx,setGainIdx]=useState(0), [brightIdx,setBrightIdx]=useState(2), [spaceIdx,setSpaceIdx]=useState(1);
+  const [fxOn,setFxOn]=useState(['reverb']), [delayModel,setDelayModel]=useState(DELAY_TYPES[0]), [reverbModel,setReverbModel]=useState(REVERB_TYPES[1]);
+  const [result,setResult]=useState(null);
+  const toggleGenre=g=>setGenres(p=>p.includes(g)?p.filter(x=>x!==g):[...p,g]);
+  const toggleFx=f=>setFxOn(p=>p.includes(f)?p.filter(x=>x!==f):[...p,f]);
+  const handleGenerate=()=>{ setResult(wizardGenerate({artist,song,genres,gainIdx,brightIdx,spaceIdx,fxOn,delayModel:fxOn.includes('delay')?delayModel:null,reverbModel:fxOn.includes('reverb')?reverbModel:null})); setStep(3); };
+  const STEPS=['곡 정보','게인 & 사운드','이펙터','결과'];
+  const ChoiceRow=({items,active,onSelect,color='#3b82f6'})=>(
+    <div className="flex gap-1.5 flex-wrap">
+      {items.map((item,i)=>(
+        <button key={i} onClick={()=>onSelect(i)} className="flex-1 min-w-[70px] py-2 px-1 rounded-xl border text-[10px] font-bold transition-all text-center"
+          style={active===i?{background:`${color}18`,borderColor:color,color}:{background:'#0d0d0d',borderColor:'#1a1a1a',color:'#4b5563'}}>{item}</button>
+      ))}
+    </div>
+  );
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+      <div className="w-full max-w-lg flex flex-col rounded-2xl border border-[#222] overflow-hidden" style={{background:'#080808',maxHeight:'92vh'}}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#181818]">
+          <div className="flex items-center gap-2.5">
+            <div className="bg-purple-600 p-1.5 rounded-lg"><Sliders size={14} className="text-white"/></div>
+            <div><div className="text-sm font-black text-white">Tone Wizard</div><div className="text-[8px] text-gray-600 mt-0.5">API 불필요 · 파라미터 기반 GP-200JR 자동 생성</div></div>
+          </div>
+          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg border border-[#222] text-gray-600 hover:text-gray-300"><X size={13}/></button>
+        </div>
+        <div className="flex items-center px-5 py-3 border-b border-[#141414] gap-1">
+          {STEPS.map((s,i)=>(
+            <React.Fragment key={i}>
+              <div className="flex items-center gap-1.5">
+                <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black ${i<step?'bg-purple-600 text-white':i===step?'bg-purple-600/20 border border-purple-500 text-purple-400':'bg-[#111] border border-[#222] text-gray-700'}`}>{i<step?'✓':i+1}</div>
+                <span className={`text-[9px] font-bold ${i===step?'text-purple-400':'text-gray-700'}`}>{s}</span>
+              </div>
+              {i<STEPS.length-1 && <div className="flex-1 h-px bg-[#1a1a1a] mx-1"/>}
+            </React.Fragment>
+          ))}
+        </div>
+        <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
+          {step===0 && (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[8px] text-gray-600 uppercase tracking-widest block mb-1.5">아티스트 (선택)</label>
+                  <input className="w-full bg-[#0d0d0d] border border-[#1c1c1c] rounded-xl px-3 py-2.5 text-xs text-gray-300 placeholder-gray-700 focus:outline-none focus:border-purple-500" placeholder="예: Vaundy" value={artist} onChange={e=>setArtist(e.target.value)}/>
+                </div>
+                <div>
+                  <label className="text-[8px] text-gray-600 uppercase tracking-widest block mb-1.5">곡 제목 (선택)</label>
+                  <input className="w-full bg-[#0d0d0d] border border-[#1c1c1c] rounded-xl px-3 py-2.5 text-xs text-gray-300 placeholder-gray-700 focus:outline-none focus:border-purple-500" placeholder="예: Odoru Popeye" value={song} onChange={e=>setSong(e.target.value)}/>
+                </div>
+              </div>
+              <div>
+                <label className="text-[8px] text-gray-600 uppercase tracking-widest block mb-2">장르 (복수 선택 가능)</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {GENRE_LIST.map(g=>(
+                    <button key={g} onClick={()=>toggleGenre(g)} className="px-2.5 py-1.5 rounded-lg border text-[9px] font-bold transition-all"
+                      style={genres.includes(g)?{background:'#4c1d9520',borderColor:'#7c3aed',color:'#a78bfa'}:{background:'#0d0d0d',borderColor:'#1a1a1a',color:'#4b5563'}}>{g}</button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+          {step===1 && (
+            <>
+              <div>
+                <label className="text-[8px] text-gray-600 uppercase tracking-widest block mb-2">게인 레벨 <span className="ml-2 font-mono text-red-400 normal-case">{GAIN_LEVELS[gainIdx]}</span></label>
+                <ChoiceRow items={['🟢 Clean','🟡 Lt.Crunch','🟠 Crunch','🔴 High Gain','⚫ Metal']} active={gainIdx} onSelect={setGainIdx} color='#ef4444'/>
+              </div>
+              <div>
+                <label className="text-[8px] text-gray-600 uppercase tracking-widest block mb-2">밝기 <span className="ml-2 font-mono text-yellow-400 normal-case">{BRIGHT_LEVELS[brightIdx]}</span></label>
+                <ChoiceRow items={['⬛ Dark','🟫 Warm','⬜ Neutral','🟨 Bright','✨ Glassy']} active={brightIdx} onSelect={setBrightIdx} color='#eab308'/>
+              </div>
+              <div>
+                <label className="text-[8px] text-gray-600 uppercase tracking-widest block mb-2">공간감 <span className="ml-2 font-mono text-cyan-400 normal-case">{SPACE_LEVELS[spaceIdx]}</span></label>
+                <ChoiceRow items={['💧 Dry','🌊 Subtle','🌊🌊 Moderate','🌊🌊🌊 Wet','🌌 Ambient']} active={spaceIdx} onSelect={setSpaceIdx} color='#06b6d4'/>
+              </div>
+            </>
+          )}
+          {step===2 && (
+            <>
+              <div>
+                <label className="text-[8px] text-gray-600 uppercase tracking-widest block mb-2">사용할 이펙터</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {FX_TOGGLES.map(fx=>{
+                    const on=fxOn.includes(fx.id), col=FX_COLOR[fx.cat]??FX_COLOR.EQ;
+                    return <button key={fx.id} onClick={()=>toggleFx(fx.id)} className="py-2.5 px-2 rounded-xl border text-[9px] font-bold transition-all"
+                      style={on?{background:col.bg,borderColor:col.border,color:col.text}:{background:'#0d0d0d',borderColor:'#1a1a1a',color:'#4b5563'}}>{on?'✓ ':''}{fx.label}</button>;
+                  })}
+                </div>
+              </div>
+              {fxOn.includes('delay') && (
+                <div>
+                  <label className="text-[8px] text-gray-600 uppercase tracking-widest block mb-2">딜레이 타입</label>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {DELAY_TYPES.map(m=><button key={m} onClick={()=>setDelayModel(m)} className="py-1.5 px-2 rounded-lg border text-[8px] font-bold truncate"
+                      style={delayModel===m?{background:'#03131a',borderColor:'#06b6d4',color:'#22d3ee'}:{background:'#0d0d0d',borderColor:'#1a1a1a',color:'#4b5563'}}>{m}</button>)}
+                  </div>
+                </div>
+              )}
+              {fxOn.includes('reverb') && (
+                <div>
+                  <label className="text-[8px] text-gray-600 uppercase tracking-widest block mb-2">리버브 타입</label>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {REVERB_TYPES.map(m=><button key={m} onClick={()=>setReverbModel(m)} className="py-1.5 px-2 rounded-lg border text-[8px] font-bold truncate"
+                      style={reverbModel===m?{background:'#03130d',borderColor:'#10b981',color:'#34d399'}:{background:'#0d0d0d',borderColor:'#1a1a1a',color:'#4b5563'}}>{m}</button>)}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+          {step===3 && result && (
+            <div className="space-y-3">
+              <div className="rounded-xl border border-purple-500/25 overflow-hidden" style={{background:'#0d0714'}}>
+                <div className="flex items-center gap-2 px-4 py-3 border-b border-purple-500/15">
+                  <Sparkles size={11} className="text-purple-400"/>
+                  <span className="text-sm font-bold text-white flex-1 truncate">{result.name}</span>
+                  <span className="text-[8px] bg-purple-600/20 text-purple-400 px-1.5 py-0.5 rounded border border-purple-500/30">WIZARD</span>
+                </div>
+                <div className="px-4 py-2.5 text-[9px] text-gray-600">
+                  <span className="text-gray-500">픽업: </span>{result.pickup}{'  '}<span className="text-gray-500">태그: </span>{result.tags.map(t=>`#${t}`).join(' ')}
+                </div>
+                <div className="px-4 py-3">
+                  <div className="text-[7px] text-gray-700 uppercase tracking-widest mb-2">시그널 체인 ({result.chain.length} 블록)</div>
+                  <div className="flex flex-wrap gap-1.5 items-center">
+                    {result.chain.map((b,i)=>{
+                      const c=FX_COLOR[b.cat]??FX_COLOR.EQ;
+                      return <React.Fragment key={i}><div className="px-2 py-1 rounded-lg border text-center min-w-[52px]" style={{background:c.bg,borderColor:`${c.border}40`}}><div className="text-[7px] font-bold" style={{color:c.text}}>{FX_LABEL[b.cat]}</div><div className="text-[6px] mt-0.5" style={{color:c.text+'80'}}>{b.model}</div></div>{i<result.chain.length-1&&<ChevronRight size={8} className="text-gray-800"/>}</React.Fragment>;
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="flex gap-3 px-5 py-4 border-t border-[#181818]">
+          {step===3 ? (
+            <>
+              <button onClick={()=>setStep(0)} className="flex-1 py-2.5 rounded-xl border border-[#222] text-gray-600 hover:text-gray-300 text-xs font-bold">처음부터</button>
+              <button onClick={()=>{onSave(result);onClose();}} className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-black" style={{background:'#7c3aed',color:'white'}}><Save size={13}/> 프리셋으로 저장</button>
+            </>
+          ) : (
+            <>
+              <button onClick={()=>step===0?onClose():setStep(s=>s-1)} className="w-24 py-2.5 rounded-xl border border-[#222] text-gray-600 hover:text-gray-300 text-xs font-bold">{step===0?'취소':'← 이전'}</button>
+              {step<2 ? <button onClick={()=>setStep(s=>s+1)} className="flex-1 py-2.5 rounded-xl text-xs font-black" style={{background:'#7c3aed',color:'white'}}>다음 →</button>
+                      : <button onClick={handleGenerate} className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-black" style={{background:'#7c3aed',color:'white'}}><Zap size={13}/> 프리셋 생성</button>}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ToneCloudApp() {
+  const [presets,setPresets]=useState(INITIAL_PRESETS);
+  const [activeId,setActiveId]=useState('1');
+  const [selBlockId,setSelBlockId]=useState(null);
+  const [search,setSearch]=useState('');
+  const [activeTags,setActiveTags]=useState([]);
+  const [aiQuery,setAiQuery]=useState('');
+  const [aiLoading,setAiLoading]=useState(false);
+  const [aiPreview,setAiPreview]=useState(null);
+  const [showBrowser,setShowBrowser]=useState(false);
+  const [showExport,setShowExport]=useState(false);
+  const [showWizard,setShowWizard]=useState(false);
+
+  const active   = presets.find(p=>p.id===activeId)??presets[0];
+  const selBlock = active?.chain.find(b=>b.id===selBlockId)??null;
+  const allTags  = [...new Set(presets.flatMap(p=>p.tags))];
+  const filtered = presets.filter(p => {
+    const lq=search.toLowerCase();
+    return (!lq||p.name.toLowerCase().includes(lq)||p.artist.toLowerCase().includes(lq))
+        && (activeTags.length===0||activeTags.every(t=>p.tags.includes(t)));
+  });
+
+  const updateParam = useCallback((blockId,key,value) => {
+    setPresets(prev=>prev.map(p=>p.id!==activeId?p:{...p,chain:p.chain.map(b=>b.id!==blockId?b:{...b,params:{...b.params,[key]:value}})}));
+  }, [activeId]);
+  const toggleBlockActive = useCallback((blockId) => {
+    setPresets(prev=>prev.map(p=>p.id!==activeId?p:{...p,chain:p.chain.map(b=>b.id!==blockId?b:{...b,active:!b.active})}));
+  }, [activeId]);
+  const resetBlockParams = useCallback((blockId) => {
+    const src=INITIAL_PRESETS.find(p=>p.id===activeId)?.chain.find(b=>b.id===blockId);
+    if (!src) return;
+    setPresets(prev=>prev.map(p=>p.id!==activeId?p:{...p,chain:p.chain.map(b=>b.id!==blockId?b:{...b,params:{...src.params}})}));
+  }, [activeId]);
+
+  const selColor   = selBlock?(FX_COLOR[selBlock.cat]??FX_COLOR.EQ):null;
+  const selDbEntry = selBlock?MODEL_DB[selBlock.cat]?.models.find(m=>m.name===selBlock.model||m.id===selBlock.model):null;
+  const toggleTag  = tag => setActiveTags(prev=>prev.includes(tag)?prev.filter(t=>t!==tag):[...prev,tag]);
+  const handleGenerate = () => {
+    if (!aiQuery.trim()) return;
+    setAiLoading(true);
+    setTimeout(()=>{ setAiPreview(aiGenerate(aiQuery)); setAiLoading(false); }, 1300);
+  };
+  const saveAI = () => {
+    if (!aiPreview) return;
+    setPresets(prev=>[aiPreview,...prev]);
+    setActiveId(aiPreview.id); setSelBlockId(null); setAiPreview(null); setAiQuery('');
+  };
+
+  return (
+    <div className="min-h-screen bg-[#0a0a0a] text-gray-200 flex flex-col" style={{fontFamily:"'Courier New',Courier,monospace"}}>
+      {showBrowser && <ModelBrowser onClose={()=>setShowBrowser(false)}/>}
+      {showExport  && <ExportModal presets={presets} active={active} onClose={()=>setShowExport(false)}/>}
+      {showWizard  && <ToneWizardModal onClose={()=>setShowWizard(false)} onSave={(preset)=>{setPresets(prev=>[preset,...prev]);setActiveId(preset.id);setSelBlockId(null);}}/>}
+
+      <SlideInPanel block={selBlock} dbEntry={selDbEntry} color={selColor??{border:'#3b82f6',bg:'#0a1628',text:'#60a5fa'}}
+        onClose={()=>setSelBlockId(null)} onParamChange={(key,val)=>updateParam(selBlock.id,key,val)}
+        onToggleActive={()=>toggleBlockActive(selBlock.id)} onReset={()=>resetBlockParams(selBlock.id)}/>
+
+      <header className="flex items-center justify-between px-6 py-3 border-b border-[#181818] bg-[#070707] flex-shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="bg-blue-600 p-1.5 rounded-lg shadow-lg shadow-blue-600/30"><Guitar size={16} className="text-white"/></div>
+          <div>
+            <h1 className="text-base font-black tracking-tight text-white leading-none">TONE CLOUD <span className="text-blue-500">GP-200JR</span></h1>
+            <p className="text-[8px] text-gray-700 uppercase tracking-[0.25em] mt-0.5">Schecter Sunset-6 Extreme · Valeton GP-200JR</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="hidden md:flex flex-col items-end text-[8px] leading-tight">
+            <span className="text-green-500 tracking-widest">● ONLINE</span>
+            <span className="text-gray-700">{presets.length} PRESETS</span>
+          </div>
+          <button onClick={()=>setShowBrowser(true)} className="flex items-center gap-1.5 border border-[#222] hover:border-blue-500/50 text-gray-500 hover:text-blue-400 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-colors"><BookOpen size={11}/> MODEL DB</button>
+          <button onClick={()=>setShowExport(true)}  className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-black transition-colors"><Download size={11}/> EXPORT</button>
+        </div>
+      </header>
+
+      <div className="flex flex-1 overflow-hidden">
+        <aside className="w-60 flex-shrink-0 flex flex-col border-r border-[#141414] bg-[#070707] overflow-hidden">
+          <div className="p-3 border-b border-[#141414]">
+            <div className="relative">
+              <Search size={11} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-700"/>
+              <input className="w-full bg-[#0d0d0d] border border-[#1c1c1c] rounded-lg pl-8 pr-3 py-2 text-[11px] text-gray-300 placeholder-gray-700 focus:outline-none focus:border-blue-600 transition-colors"
+                placeholder="SEARCH PRESETS..." value={search} onChange={e=>setSearch(e.target.value)}/>
+            </div>
+          </div>
+          <div className="p-3 border-b border-[#141414]">
+            <div className="flex items-center gap-1 mb-2"><Tag size={9} className="text-gray-700"/><span className="text-[8px] text-gray-700 uppercase tracking-widest">TAGS</span></div>
+            <div className="flex flex-wrap gap-1">
+              {allTags.map(tag=>(
+                <button key={tag} onClick={()=>toggleTag(tag)} className={`text-[8px] px-1.5 py-0.5 rounded-full border transition-all ${activeTags.includes(tag)?'bg-blue-600/20 border-blue-500/60 text-blue-400':'border-[#222] text-gray-700 hover:border-gray-600'}`}>{tag}</button>
+              ))}
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            <div className="p-2 space-y-0.5">
+              <div className="text-[8px] text-gray-700 uppercase tracking-widest px-2 py-1">PRESETS ({filtered.length})</div>
+              {filtered.map(preset=>{
+                const isActive=preset.id===activeId;
+                return (
+                  <button key={preset.id} onClick={()=>{setActiveId(preset.id);setSelBlockId(null);}} className={`w-full text-left px-2.5 py-2 rounded-lg transition-all ${isActive?'bg-blue-600/12 border border-blue-500/25':'border border-transparent hover:bg-[#0e0e0e]'}`}>
+                    <div className="flex items-start justify-between gap-1">
+                      <div className="min-w-0">
+                        <div className={`text-[11px] font-bold truncate ${isActive?'text-blue-400':'text-gray-300'}`}>{preset.name}</div>
+                        <div className="text-[8px] text-gray-600 flex items-center gap-1 mt-0.5 truncate"><Music size={7}/>{preset.artist}</div>
+                      </div>
+                      <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
+                        {preset.isAI&&<Sparkles size={9} className="text-blue-500"/>}
+                        {preset.rating>0&&<Star size={9} className="text-yellow-500 fill-yellow-500"/>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-0.5 mt-1.5 flex-wrap">
+                      {preset.chain.slice(0,5).map((b,i)=>{const c=FX_COLOR[b.cat]??FX_COLOR.EQ;return <span key={i} className="text-[7px] px-1 py-0.5 rounded" style={{background:c.bg,color:c.text,border:`1px solid ${c.border}33`}}>{b.cat}</span>;})}
+                      {preset.chain.length>5&&<span className="text-[7px] text-gray-700">+{preset.chain.length-5}</span>}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </aside>
+
+        <main className="flex-1 flex flex-col overflow-hidden">
+          <div className="px-6 py-4 border-b border-[#141414] flex-shrink-0">
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  {active.isAI&&<Sparkles size={13} className="text-blue-400"/>}
+                  <h2 className="text-xl font-black text-white tracking-tight">{active.name}</h2>
+                </div>
+                <div className="flex flex-wrap items-center gap-3 mt-1.5">
+                  <span className="text-[10px] text-gray-500 flex items-center gap-1"><Music size={10}/>{active.artist}</span>
+                  {active.song&&<span className="text-[10px] text-gray-700">"{active.song}"</span>}
+                  <span className="text-[8px] bg-blue-900/25 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20 uppercase tracking-wider">{active.pickup}</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-0.5">
+                {[1,2,3,4,5].map(s=><Star key={s} size={11} className={s<=active.rating?'text-yellow-500 fill-yellow-500':'text-gray-800'}/>)}
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-1 mt-2.5">
+              {active.tags.map(tag=><span key={tag} className="text-[8px] px-1.5 py-0.5 rounded-full border border-[#1e1e1e] text-gray-700">#{tag}</span>)}
+            </div>
+          </div>
+
+          <div className="px-6 py-4 border-b border-[#141414] flex-shrink-0">
+            <div className="flex items-center gap-2 mb-3">
+              <Activity size={10} className="text-gray-700"/>
+              <span className="text-[8px] text-gray-700 uppercase tracking-widest">SIGNAL CHAIN — VALETON GP-200JR</span>
+            </div>
+            <div className="flex items-center gap-1 overflow-x-auto pb-1">
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <div className="min-w-[58px] p-2 rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] text-center">
+                  <Guitar size={14} className="text-gray-700 mx-auto mb-1"/>
+                  <div className="text-[7px] text-gray-700 tracking-widest">GUITAR</div>
+                </div>
+                <ChevronRight size={10} className="text-gray-800"/>
+              </div>
+              {active.chain.map(block=>(
+                <ChainBlock key={block.id} block={block} isSelected={selBlockId===block.id}
+                  onClick={()=>setSelBlockId(selBlockId===block.id?null:block.id)}/>
+              ))}
+              <div className="min-w-[58px] p-2 rounded-xl border border-[#1c1c1c] bg-[#0d0d0d] text-center flex-shrink-0">
+                <div className="w-3.5 h-3.5 rounded-full bg-green-600 mx-auto mb-1 ring-2 ring-green-400/25"/>
+                <div className="text-[7px] text-gray-700 tracking-widest">OUTPUT</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 flex flex-col items-center justify-center text-center gap-3 px-6">
+            <div className="w-16 h-16 rounded-2xl border border-[#1a1a1a] flex items-center justify-center mb-1" style={{background:'#0d0d0d'}}>
+              <Sliders size={28} className="text-gray-800"/>
+            </div>
+            <p className="text-gray-700 text-sm font-bold">시그널 체인 블록을 클릭하세요</p>
+            <p className="text-gray-800 text-xs leading-relaxed max-w-xs">우측에서 GP-200JR 스타일 노브 패널이 슬라이드 인 됩니다.<br/>드래그·더블클릭·+/- 버튼으로 값을 조절할 수 있습니다.</p>
+            <button onClick={()=>setShowBrowser(true)} className="mt-2 flex items-center gap-1.5 text-[10px] text-blue-500 hover:text-blue-400 border border-blue-500/20 hover:border-blue-500/40 px-3 py-1.5 rounded-lg transition-colors"><BookOpen size={11}/> GP-200JR 모델 브라우저 열기</button>
+            <div className="mt-6 w-full max-w-md">
+              <div className="text-[8px] text-gray-800 uppercase tracking-widest mb-2">ACTIVE CHAIN</div>
+              <div className="flex flex-wrap justify-center gap-1.5">
+                {active.chain.map(b=>{const c=FX_COLOR[b.cat]??FX_COLOR.EQ;return(
+                  <button key={b.id} onClick={()=>setSelBlockId(b.id)} className="px-2.5 py-1.5 rounded-lg border text-[8px] font-bold uppercase tracking-wider transition-all hover:scale-105"
+                    style={{background:c.bg,borderColor:`${c.border}40`,color:b.active?c.text:c.text+'40'}}>{b.model}</button>
+                );})}
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+
+      <footer className="border-t border-[#141414] bg-[#070707] px-6 py-3.5 flex-shrink-0">
+        {aiPreview ? (
+          <div className="rounded-xl p-3.5 border" style={{background:'#080f1c',borderColor:'#3b82f630'}}>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Sparkles size={12} className="text-blue-400"/>
+                <span className="text-sm font-bold text-white">{aiPreview.name}</span>
+                <span className="text-[8px] bg-blue-600/20 text-blue-400 px-1.5 py-0.5 rounded border border-blue-500/30">AI · GP-200JR</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={()=>setAiPreview(null)} className="flex items-center gap-1 text-[10px] text-gray-600 hover:text-gray-400 px-2.5 py-1.5 rounded-lg border border-[#222]"><X size={10}/> DISCARD</button>
+                <button onClick={saveAI} className="flex items-center gap-1.5 text-[10px] text-white bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded-lg font-bold"><Save size={10}/> SAVE PRESET</button>
+              </div>
+            </div>
+            <div className="flex items-center gap-1 overflow-x-auto">
+              {aiPreview.chain.map((b,i)=>{const c=FX_COLOR[b.cat]??FX_COLOR.EQ;return(
+                <React.Fragment key={i}>
+                  <div className="flex-shrink-0 min-w-[64px] text-center p-1.5 rounded-lg border" style={{background:c.bg,borderColor:`${c.border}40`}}>
+                    <div className="text-[7px] font-bold uppercase" style={{color:c.text}}>{FX_LABEL[b.cat]}</div>
+                    <div className="text-[7px] mt-0.5" style={{color:c.text+'99'}}>{b.model}</div>
+                  </div>
+                  {i<aiPreview.chain.length-1&&<ChevronRight size={9} className="text-gray-800 flex-shrink-0"/>}
+                </React.Fragment>
+              );})}
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Sparkles size={13} className="text-blue-500"/>
+              <span className="text-[8px] text-gray-700 uppercase tracking-widest hidden sm:block">AI TONE</span>
+            </div>
+            <input className="flex-1 bg-[#0d0d0d] border border-[#1c1c1c] rounded-xl px-4 py-2.5 text-xs text-gray-300 placeholder-gray-700 focus:outline-none focus:border-blue-600 transition-colors"
+              placeholder="아티스트 입력 (HigeDan / Vaundy / YOASOBI / Metallica…)"
+              value={aiQuery} onChange={e=>setAiQuery(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleGenerate()}/>
+            <button onClick={handleGenerate} disabled={aiLoading||!aiQuery.trim()}
+              className="flex items-center gap-2 bg-white hover:bg-blue-400 disabled:opacity-30 text-black px-4 py-2.5 rounded-xl text-xs font-black transition-colors flex-shrink-0">
+              {aiLoading?<div className="w-3.5 h-3.5 border-2 border-black/30 border-t-black rounded-full animate-spin"/>:<Zap size={13} fill="currentColor"/>}
+              ANALYZE
+            </button>
+            <div className="h-7 w-px bg-[#1e1e1e] flex-shrink-0"/>
+            <button onClick={()=>setShowWizard(true)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black flex-shrink-0 transition-all hover:scale-105"
+              style={{background:'linear-gradient(135deg,#6d28d9,#4c1d95)',color:'white',boxShadow:'0 0 12px #7c3aed44'}}>
+              <span className="text-sm leading-none">🎛</span> TONE WIZARD
+            </button>
+          </div>
+        )}
+      </footer>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<ToneCloudApp />);
+  </script>
+</body>
+</html>
