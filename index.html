@@ -915,10 +915,48 @@ function ToneCloudApp() {
   const selColor   = selBlock?(FX_COLOR[selBlock.cat]??FX_COLOR.EQ):null;
   const selDbEntry = selBlock?MODEL_DB[selBlock.cat]?.models.find(m=>m.name===selBlock.model||m.id===selBlock.model):null;
   const toggleTag  = tag => setActiveTags(prev=>prev.includes(tag)?prev.filter(t=>t!==tag):[...prev,tag]);
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     if (!aiQuery.trim()) return;
     setAiLoading(true);
-    setTimeout(()=>{ setAiPreview(aiGenerate(aiQuery)); setAiLoading(false); }, 1300);
+    try {
+      // 1. MusicBrainz API로 아티스트 분석하여 진짜 장르/태그 가져오기
+      const res = await fetch(`https://musicbrainz.org/ws/2/artist/?query=${encodeURIComponent(aiQuery)}&fmt=json`);
+      const data = await res.json();
+      
+      let tags = [];
+      if (data.artists && data.artists.length > 0 && data.artists[0].tags) {
+        tags = data.artists[0].tags.map(t => t.name.toLowerCase());
+      }
+      
+      // 검색창에 직접 장르를 쳤을 경우를 대비해 원본 검색어도 보조 태그로 추가
+      const combinedTags = [...tags, ...aiQuery.toLowerCase().split(/[\s,]+/)];
+      
+      // 2. genreMapper 룰셋 매핑
+      const { rule, matched } = window.GenreMapper.mapGenreToHardware(combinedTags);
+      const params = window.GenreMapper.ruleToWizardParams(rule);
+
+      // 3. 실제 파라미터를 기반으로 AI 톤 자동 생성
+      const preset = wizardGenerate({
+        artist: data.artists?.[0]?.name || aiQuery,
+        song: matched ? `Style: ${rule.label}` : 'AI Generated (Fallback)',
+        genres: params.genres,
+        gainIdx: params.gainIdx,
+        brightIdx: params.brightIdx,
+        spaceIdx: params.spaceIdx,
+        fxOn: params.fxOn,
+        delayModel: null,
+        reverbModel: null
+      });
+      preset.isAI = true;
+      preset.id = `ai-${Date.now()}`;
+      
+      setAiPreview(preset);
+    } catch (e) {
+      console.error(e);
+      alert('아티스트 분석 중 오류가 발생했습니다.');
+    } finally {
+      setAiLoading(false);
+    }
   };
   const saveAI = () => {
     if (!aiPreview) return;
@@ -1110,7 +1148,7 @@ function ToneCloudApp() {
             <button onClick={()=>setShowWizard(true)}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black flex-shrink-0 transition-all hover:scale-105"
               style={{background:'linear-gradient(135deg,#6d28d9,#4c1d95)',color:'white',boxShadow:'0 0 12px #7c3aed44'}}>
-              <span className="text-sm leading-none">🎛</span> TONE WIZARD
+                            <span className="text-sm leading-none">🎛</span> CUSTOM BUILDER
             </button>
           </div>
         )}
