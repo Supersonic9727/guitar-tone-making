@@ -8,6 +8,7 @@
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="./genreMapper.js"></script>
   <style>
     * { box-sizing: border-box; }
     body { margin: 0; background: #0a0a0a; }
@@ -345,72 +346,26 @@ const INITIAL_PRESETS = [
 ];
 
 function aiGenerate(query) {
-  const q = query.toLowerCase();
-  const uid = `ai-${Date.now()}`;
-  const make = (name, artist, tags, pickup, chain) => ({
-    id:uid, name, artist, song:'AI Generated',
-    tags:[...tags,'AI'], pickup, rating:0, isAI:true,
-    chain: chain.map((b,i) => ({ ...b, id:`${uid}-${i}` })),
+  // 1. 검색어를 쉼표나 공백 단위의 태그 배열로 분리
+  const tags = query.toLowerCase().split(/[\s,]+/);
+  
+  // 2. 방금 만든 genreMapper.js의 룰셋을 통해 분석 및 매핑
+  const { rule, matched } = window.GenreMapper.mapGenreToHardware(tags);
+  const params = window.GenreMapper.ruleToWizardParams(rule);
+  
+  // 3. 분석된 파라미터를 기반으로 GP-200JR 톤 자동 생성
+  return wizardGenerate({
+    artist: query,
+    song: matched ? `Style: ${rule.label}` : 'AI Generated (Fallback)',
+    genres: params.genres,
+    gainIdx: params.gainIdx,
+    brightIdx: params.brightIdx,
+    spaceIdx: params.spaceIdx,
+    fxOn: params.fxOn,
+    delayModel: null,
+    reverbModel: null
   });
-  if (q.includes('hige') || q.includes('higedan'))
-    return make('AI: HigeDan Studio Clean','Official HIGE DANdism',['clean','bright','J-Pop'],'Neck Split (2nd)',[
-      { cat:'COMP', model:'COMP4',       active:true,  params:{ Attack:28, Release:48, Ratio:38, Level:72 } },
-      { cat:'AMP',  model:'Dark Twin',   active:true,  params:{ Gain:20, Bass:52, Mid:58, Treble:70, Vol:75, Presence:52 } },
-      { cat:'CHO',  model:'G-Chorus',    active:true,  params:{ Rate:32, Depth:38, Mix:42 } },
-      { cat:'DLY',  model:'BBD Delay S', active:true,  params:{ Time:48, Feedback:28, Mix:22, HiCut:62 } },
-      { cat:'RVB',  model:'Plate',       active:true,  params:{ Decay:52, Pre:18, Mix:28 } },
-    ]);
-  if (q.includes('vaundy'))
-    return make('AI: Vaundy Rhythm Drive','Vaundy',['crunch','drive','J-Rock'],'Bridge Split (4th)',[
-      { cat:'NS',  model:'Gate 1',   active:true, params:{ Threshold:32, Release:38 } },
-      { cat:'OD',  model:'Force',    active:true, params:{ Drive:60, Tone:58, Level:68 } },
-      { cat:'AMP', model:'UK 800',   active:true, params:{ Gain:52, Bass:42, Mid:60, Treble:62, Vol:72, Presence:60 } },
-      { cat:'CAB', model:'4x12 V30', active:true, params:{ HiCut:58, LoCut:42, Mix:100 } },
-      { cat:'RVB', model:'Room',     active:true, params:{ Decay:32, Mix:18 } },
-    ]);
-  if (q.includes('yoasobi'))
-    return make('AI: YOASOBI Sparkle Pop','YOASOBI',['clean','sparkle','J-Pop'],'Mid (3rd)',[
-      { cat:'COMP', model:'S-Comp',         active:true, params:{ Threshold:38, Ratio:28, Gain:62, Attack:18, Release:42 } },
-      { cat:'AMP',  model:'J-120 CL',       active:true, params:{ Gain:16, Bass:55, Mid:48, Treble:74, Vol:78, Presence:48 } },
-      { cat:'CHO',  model:'B-Chorus',       active:true, params:{ Rate:28, Depth:35, Mix:38 } },
-      { cat:'DLY',  model:'Digital Delay S',active:true, params:{ Time:52, Feedback:22, Mix:18 } },
-      { cat:'RVB',  model:'Sweet Space',    active:true, params:{ Decay:55, Mix:32 } },
-    ]);
-  if (q.includes('kenshi') || q.includes('yonezu'))
-    return make('AI: Kenshi Yonezu Arena','Kenshi Yonezu',['lead','sustain','arena'],'Bridge HB',[
-      { cat:'NS',  model:'Gate 2',      active:true, params:{ Threshold:35, Release:42 } },
-      { cat:'OD',  model:'Green OD',    active:true, params:{ Drive:58, Tone:52, Level:65 } },
-      { cat:'AMP', model:'Flagman 1',   active:true, params:{ Gain:68, Bass:48, Mid:62, Treble:58, Vol:70, Presence:65 } },
-      { cat:'CAB', model:'4x12 GRN',    active:true, params:{ HiCut:55, Mix:100 } },
-      { cat:'DLY', model:'Tape Delay S',active:true, params:{ Time:50, Feedback:32, Mix:26, HiCut:55 } },
-      { cat:'RVB', model:'N-Star',      active:true, params:{ Decay:45, Pre:15, Mix:28 } },
-    ]);
-  if (q.includes('mayer') || q.includes('blues'))
-    return make('AI: John Mayer Blues','John Mayer',['blues','clean','expressive'],'Neck (1st)',[
-      { cat:'COMP', model:'COMP',        active:true, params:{ Attack:35, Release:55, Ratio:35, Level:68 } },
-      { cat:'OD',   model:'Blues Master',active:true, params:{ Drive:45, Tone:55, Level:62 } },
-      { cat:'AMP',  model:'Tweedy',      active:true, params:{ Gain:35, Bass:55, Mid:58, Treble:62, Vol:70, Presence:55 } },
-      { cat:'DLY',  model:'Tape',        active:true, params:{ Time:38, Feedback:28, Mix:20 } },
-      { cat:'RVB',  model:'Spring',      active:true, params:{ Decay:45, Mix:28 } },
-    ]);
-  if (q.includes('metallica') || q.includes('metal'))
-    return make('AI: Metallica Heaviness','Metallica',['metal','heavy','tight'],'Bridge HB',[
-      { cat:'NS',  model:'Gate 1',    active:true, params:{ Threshold:42, Release:30 } },
-      { cat:'OD',  model:'Swarm',     active:true, params:{ Drive:65, Tone:50, Level:70 } },
-      { cat:'AMP', model:'Mess DualV',active:true, params:{ Gain:85, Bass:55, Mid:40, Treble:65, Vol:72, Presence:70 } },
-      { cat:'CAB', model:'4x12 Mesa', active:true, params:{ HiCut:52, Mix:100 } },
-      { cat:'EQ',  model:'Hyper EQ',  active:true, params:{ Lo:52, LMid:42, Mid:38, HMid:55, Hi:58 } },
-      { cat:'RVB', model:'Studio',    active:true, params:{ Decay:25, Mix:10 } },
-    ]);
-  return make(`AI: ${query} Tone`,query,['custom'],'Mid (3rd)',[
-    { cat:'COMP', model:'COMP',       active:true, params:{ Attack:30, Release:40, Level:65, Ratio:35 } },
-    { cat:'OD',   model:'Blues OD',   active:true, params:{ Drive:45, Tone:50, Level:60 } },
-    { cat:'AMP',  model:'Dark Twin',  active:true, params:{ Gain:30, Bass:50, Mid:55, Treble:62, Vol:70, Presence:52 } },
-    { cat:'DLY',  model:'BBD Delay S',active:true, params:{ Time:42, Feedback:25, Mix:20 } },
-    { cat:'RVB',  model:'Hall',       active:true, params:{ Decay:50, Mix:28 } },
-  ]);
 }
-
 function InteractiveKnob({ label, value, color, onChange, size='md' }) {
   const [editing, setEditing] = useState(false);
   const [inputStr, setInputStr] = useState('');
