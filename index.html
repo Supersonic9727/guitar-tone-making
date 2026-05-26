@@ -361,10 +361,11 @@ function aiGenerate(query) {
     gainIdx: params.gainIdx,
     brightIdx: params.brightIdx,
     spaceIdx: params.spaceIdx,
-    fxOn: params.fxOn,
-    delayModel: null,
-    reverbModel: null
-  });
+        fxOn: params.fxOn,
+        delayModel: null,
+        reverbModel: null,
+        useCab
+      });
 }
 function InteractiveKnob({ label, value, color, onChange, size='md' }) {
   const [editing, setEditing] = useState(false);
@@ -699,7 +700,7 @@ const FX_TOGGLES=[{id:'comp',label:'Compressor',cat:'COMP'},{id:'chorus',label:'
 const DELAY_TYPES=['BBD Delay S','Tape Delay S','Digital Delay S','Slapback','Ping Pong','Pure'];
 const REVERB_TYPES=['Room','Hall','Plate','Spring','Shimmer','Sweet Space'];
 
-function wizardGenerate({ artist, song, genres, gainIdx, brightIdx, spaceIdx, fxOn, delayModel, reverbModel }) {
+function wizardGenerate({ artist, song, genres, gainIdx, brightIdx, spaceIdx, fxOn, delayModel, reverbModel, useCab = true }) {
   const id=`wiz-${Date.now()}`, chain=[];
   if (gainIdx>=2||fxOn.includes('ns')) chain.push({cat:'NS',model:'Gate 1',active:true,params:{Threshold:26+gainIdx*5,Release:38}});
   if (fxOn.includes('comp')||gainIdx<=1) chain.push({cat:'COMP',model:gainIdx===0?'COMP4':'COMP',active:true,params:{Attack:22+gainIdx*4,Release:44,Ratio:28+gainIdx*5,Level:68}});
@@ -712,7 +713,16 @@ function wizardGenerate({ artist, song, genres, gainIdx, brightIdx, spaceIdx, fx
   const mid=Math.max(25,Math.min(80,[54,55,58,54,46][gainIdx]+(brightIdx-2)*3));
   const bass=Math.max(25,Math.min(80,[52,48,48,52,56][gainIdx]-(brightIdx-2)*4));
   chain.push({cat:'AMP',model:AMP_TABLE[gainIdx],active:true,params:{Gain:[16,34,58,74,88][gainIdx],Bass:bass,Mid:mid,Treble:treble,Vol:70,Presence:Math.max(30,Math.min(80,50+(brightIdx-2)*7))}});
-  if (gainIdx>=2) chain.push({cat:'CAB',model:isMetal?'4x12 Mesa':gainIdx===2?'4x12 GRN':'4x12 V30',active:true,params:{HiCut:58-gainIdx*2,LoCut:34+gainIdx*2,Mix:100}});
+  
+  if (useCab) {
+    let cabModel = '4x12 V30';
+    if (gainIdx === 0) cabModel = isJPop ? '2x12 Vox' : '2x12 Fender';
+    else if (gainIdx === 1) cabModel = isBlues ? '4x12 GRN' : '2x12 Vox';
+    else if (gainIdx === 2) cabModel = '4x12 GRN';
+    else cabModel = isMetal ? '4x12 Mesa' : '4x12 V30';
+    chain.push({cat:'CAB',model:cabModel,active:true,params:{HiCut:Math.max(40,58-gainIdx*2),LoCut:Math.min(60,34+gainIdx*2),Mix:100}});
+  }
+
   if (gainIdx>=3||(gainIdx>=2&&isMetal)) chain.push({cat:'EQ',model:'Mess EQ',active:true,params:{Lo:52,LMid:40+(brightIdx-2)*3,Mid:42+(brightIdx-2)*4,HMid:55,Hi:54+(brightIdx-2)*4}});
   if (fxOn.includes('chorus')) chain.push({cat:'CHO',model:brightIdx>=3?'G-Chorus':'A-Chorus',active:true,params:{Rate:28+spaceIdx*5,Depth:gainIdx<=1?42:25,Mix:32+spaceIdx*4}});
   if (fxOn.includes('flanger')) chain.push({cat:'FLG',model:'Jet',active:true,params:{Rate:30,Depth:45,Feedback:38,Mix:32}});
@@ -728,11 +738,12 @@ function ToneWizardModal({ onClose, onSave }) {
   const [step,setStep]=useState(0);
   const [artist,setArtist]=useState(''), [song,setSong]=useState(''), [genres,setGenres]=useState([]);
   const [gainIdx,setGainIdx]=useState(0), [brightIdx,setBrightIdx]=useState(2), [spaceIdx,setSpaceIdx]=useState(1);
-  const [fxOn,setFxOn]=useState(['reverb']), [delayModel,setDelayModel]=useState(DELAY_TYPES[0]), [reverbModel,setReverbModel]=useState(REVERB_TYPES[1]);
+    const [fxOn,setFxOn]=useState(['reverb']), [delayModel,setDelayModel]=useState(DELAY_TYPES[0]), [reverbModel,setReverbModel]=useState(REVERB_TYPES[1]);
   const [result,setResult]=useState(null);
+  const [useCab,setUseCab]=useState(true);
   const toggleGenre=g=>setGenres(p=>p.includes(g)?p.filter(x=>x!==g):[...p,g]);
   const toggleFx=f=>setFxOn(p=>p.includes(f)?p.filter(x=>x!==f):[...p,f]);
-  const handleGenerate=()=>{ setResult(wizardGenerate({artist,song,genres,gainIdx,brightIdx,spaceIdx,fxOn,delayModel:fxOn.includes('delay')?delayModel:null,reverbModel:fxOn.includes('reverb')?reverbModel:null})); setStep(3); };
+  const handleGenerate=()=>{ setResult(wizardGenerate({artist,song,genres,gainIdx,brightIdx,spaceIdx,fxOn,delayModel:fxOn.includes('delay')?delayModel:null,reverbModel:fxOn.includes('reverb')?reverbModel:null,useCab})); setStep(3); };
   const STEPS=['곡 정보','게인 & 사운드','이펙터','결과'];
   const ChoiceRow=({items,active,onSelect,color='#3b82f6'})=>(
     <div className="flex gap-1.5 flex-wrap">
@@ -766,7 +777,7 @@ function ToneWizardModal({ onClose, onSave }) {
         <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
           {step===0 && (
             <>
-              <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-gray-400 uppercase tracking-widest block mb-1.5">아티스트 (선택)</label>
                   <input className="w-full bg-[#161616] border border-[#383838] rounded-xl px-3 py-2.5 text-xs text-gray-300 placeholder-gray-500 focus:outline-none focus:border-purple-500" placeholder="예: Vaundy" value={artist} onChange={e=>setArtist(e.target.value)}/>
@@ -776,13 +787,12 @@ function ToneWizardModal({ onClose, onSave }) {
                   <input className="w-full bg-[#161616] border border-[#383838] rounded-xl px-3 py-2.5 text-xs text-gray-300 placeholder-gray-500 focus:outline-none focus:border-purple-500" placeholder="예: Odoru Popeye" value={song} onChange={e=>setSong(e.target.value)}/>
                 </div>
               </div>
+
               <div>
-                <label className="text-xs text-gray-400 uppercase tracking-widest block mb-2">장르 (복수 선택 가능)</label>
-                <div className="flex flex-wrap gap-1.5">
-                  {GENRE_LIST.map(g=>(
-                    <button key={g} onClick={()=>toggleGenre(g)} className="px-2.5 py-1.5 rounded-lg border text-xs font-bold transition-all"
-                      style={genres.includes(g)?{background:'#4c1d9520',borderColor:'#7c3aed',color:'#a78bfa'}:{background:'#0d0d0d',borderColor:'#1a1a1a',color:'#4b5563'}}>{g}</button>
-                  ))}
+                <div className="text-xs font-bold text-gray-400 mb-2">OUTPUT MODE (CAB SIM)</div>
+                <div className="flex gap-2">
+                  <button onClick={()=>setUseCab(true)} className={`flex-1 py-2 rounded-lg border text-xs font-bold transition-all ${useCab?'bg-blue-600/20 border-blue-500 text-blue-400':'bg-transparent border-[#2a2a2a] text-gray-500 hover:text-gray-400'}`}>Direct / Mixer (CAB ON)</button>
+                  <button onClick={()=>setUseCab(false)} className={`flex-1 py-2 rounded-lg border text-xs font-bold transition-all ${!useCab?'bg-blue-600/20 border-blue-500 text-blue-400':'bg-transparent border-[#2a2a2a] text-gray-500 hover:text-gray-400'}`}>Amp Return (CAB OFF)</button>
                 </div>
               </div>
             </>
@@ -887,6 +897,7 @@ function ToneCloudApp() {
   const [aiQuery,setAiQuery]=useState('');
   const [aiLoading,setAiLoading]=useState(false);
   const [aiPreview,setAiPreview]=useState(null);
+  const [useCab,setUseCab]=useState(true);
   const [showBrowser,setShowBrowser]=useState(false);
   const [showExport,setShowExport]=useState(false);
   const [showWizard,setShowWizard]=useState(false);
@@ -1145,11 +1156,17 @@ function ToneCloudApp() {
               ANALYZE
             </button>
             <div className="h-7 w-px bg-[#1e1e1e] flex-shrink-0"/>
-            <button onClick={()=>setShowWizard(true)}
+                        <button onClick={()=>setShowWizard(true)}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black flex-shrink-0 transition-all hover:scale-105"
               style={{background:'linear-gradient(135deg,#6d28d9,#4c1d95)',color:'white',boxShadow:'0 0 12px #7c3aed44'}}>
-                            <span className="text-sm leading-none">🎛</span> CUSTOM BUILDER
+              <span className="text-sm leading-none">🎛</span> CUSTOM BUILDER
             </button>
+          </div>
+
+          <div className="flex items-center justify-center gap-4 mt-4">
+            <span className="text-[11px] text-gray-500 font-bold uppercase tracking-widest">OUTPUT MODE</span>
+            <button onClick={()=>setUseCab(true)} className={`px-3 py-1.5 rounded-lg border text-[11px] font-bold transition-all ${useCab?'bg-blue-600/20 border-blue-500 text-blue-400':'bg-transparent border-[#333] text-gray-500 hover:text-gray-400'}`}>Direct / Mixer (CAB ON)</button>
+            <button onClick={()=>setUseCab(false)} className={`px-3 py-1.5 rounded-lg border text-[11px] font-bold transition-all ${!useCab?'bg-blue-600/20 border-blue-500 text-blue-400':'bg-transparent border-[#333] text-gray-500 hover:text-gray-400'}`}>Amp Return (CAB OFF)</button>
           </div>
         )}
       </footer>
