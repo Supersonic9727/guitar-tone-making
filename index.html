@@ -344,29 +344,6 @@ const INITIAL_PRESETS = [
     ],
   },
 ];
-
-function aiGenerate(query) {
-  // 1. 검색어를 쉼표나 공백 단위의 태그 배열로 분리
-  const tags = query.toLowerCase().split(/[\s,]+/);
-  
-  // 2. 방금 만든 genreMapper.js의 룰셋을 통해 분석 및 매핑
-  const { rule, matched } = window.GenreMapper.mapGenreToHardware(tags);
-  const params = window.GenreMapper.ruleToWizardParams(rule);
-  
-  // 3. 분석된 파라미터를 기반으로 GP-200JR 톤 자동 생성
-  return wizardGenerate({
-    artist: query,
-    song: matched ? `Style: ${rule.label}` : 'AI Generated (Fallback)',
-    genres: params.genres,
-    gainIdx: params.gainIdx,
-    brightIdx: params.brightIdx,
-    spaceIdx: params.spaceIdx,
-        fxOn: params.fxOn,
-        delayModel: null,
-        reverbModel: null,
-        useCab
-      });
-}
 function InteractiveKnob({ label, value, color, onChange, size='md' }) {
   const [editing, setEditing] = useState(false);
   const [inputStr, setInputStr] = useState('');
@@ -947,7 +924,7 @@ function ToneCloudApp() {
       const params = window.GenreMapper.ruleToWizardParams(rule);
 
       // 3. 실제 파라미터를 기반으로 AI 톤 자동 생성
-      const preset = wizardGenerate({
+            const preset = wizardGenerate({
         artist: data.artists?.[0]?.name || aiQuery,
         song: matched ? `Style: ${rule.label}` : 'AI Generated (Fallback)',
         genres: params.genres,
@@ -956,7 +933,8 @@ function ToneCloudApp() {
         spaceIdx: params.spaceIdx,
         fxOn: params.fxOn,
         delayModel: null,
-        reverbModel: null
+        reverbModel: null,
+        useCab
       });
       preset.isAI = true;
       preset.id = `ai-${Date.now()}`;
