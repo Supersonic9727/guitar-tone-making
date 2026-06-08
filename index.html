@@ -288,7 +288,7 @@ const FX_LABEL = Object.fromEntries(Object.entries(MODEL_DB).map(([k,v]) => [k, 
 const INITIAL_PRESETS = [
   {
     id:'1', name:'HigeDan Glassy Clean', artist:'Official HIGE DANdism', song:'Subtitle',
-    tags:['clean','bright','J-Pop','chorus'], pickup:'Neck Split (2nd)', rating:5, isAI:false,
+    tags:['clean','bright','J-Pop','chorus'], pickup:'Position 4: Outer Coils', rating:5, isAI:false,
     chain:[
       { id:'p1c1', cat:'COMP', model:'COMP',       active:true,  params:{ Attack:30, Release:50, Ratio:40, Level:70 } },
       { id:'p1c2', cat:'AMP',  model:'Dark Twin',   active:true,  params:{ Gain:22, Bass:50, Mid:60, Treble:68, Vol:75, Presence:55 } },
@@ -299,7 +299,7 @@ const INITIAL_PRESETS = [
   },
   {
     id:'2', name:'Vaundy Crunchy Edge', artist:'Vaundy', song:'Odoru Popeye',
-    tags:['crunch','drive','J-Rock','edge'], pickup:'Bridge Split (4th)', rating:4, isAI:false,
+    tags:['crunch','drive','J-Rock','edge'], pickup:'Position 2: Inner Coils', rating:4, isAI:false,
     chain:[
       { id:'p2c1', cat:'NS',  model:'Gate 1',    active:true,  params:{ Threshold:32, Release:38 } },
       { id:'p2c2', cat:'DST', model:'Darktale',  active:true,  params:{ Gain:65, Tone:55, Level:70 } },
@@ -311,7 +311,7 @@ const INITIAL_PRESETS = [
   },
   {
     id:'3', name:'YOASOBI Electric Night', artist:'YOASOBI', song:'Idol',
-    tags:['clean','pop','sparkle','J-Pop'], pickup:'Mid (3rd)', rating:4, isAI:false,
+    tags:['clean','pop','sparkle','J-Pop'], pickup:'Position 3: Both Humbuckers', rating:4, isAI:false,
     chain:[
       { id:'p3c1', cat:'COMP', model:'S-Comp',        active:true,  params:{ Threshold:40, Ratio:30, Gain:62, Attack:20, Release:45 } },
       { id:'p3c2', cat:'AMP',  model:'J-120 CL',       active:true,  params:{ Gain:18, Bass:55, Mid:50, Treble:72, Vol:76, Presence:50 } },
@@ -322,7 +322,7 @@ const INITIAL_PRESETS = [
   },
   {
     id:'4', name:'Kenshi Yonezu Arena Lead', artist:'Kenshi Yonezu', song:'Lemon',
-    tags:['lead','sustain','arena','overdrive'], pickup:'Bridge HB', rating:5, isAI:false,
+    tags:['lead','sustain','arena','overdrive'], pickup:'Position 1: Full Bridge', rating:5, isAI:false,
     chain:[
       { id:'p4c1', cat:'NS',  model:'Gate 2',      active:true,  params:{ Threshold:35, Release:40 } },
       { id:'p4c2', cat:'OD',  model:'Green OD',    active:true,  params:{ Drive:55, Tone:50, Level:65 } },
@@ -334,7 +334,7 @@ const INITIAL_PRESETS = [
   },
   {
     id:'5', name:'Suda51 Fuzz Wall', artist:'Suda51 / Punk Style', song:'Heavy Distortion',
-    tags:['fuzz','heavy','punk','lead'], pickup:'Bridge HB', rating:4, isAI:false,
+    tags:['fuzz','heavy','punk','lead'], pickup:'Position 1: Full Bridge', rating:4, isAI:false,
     chain:[
       { id:'p5c1', cat:'NS',  model:'Gate 1',    active:true,  params:{ Threshold:38, Release:35 } },
       { id:'p5c2', cat:'DST', model:'Lazaro',    active:true,  params:{ Sustain:75, Tone:45, Volume:70 } },
@@ -344,7 +344,7 @@ const INITIAL_PRESETS = [
     ],
   },
 ];
-function InteractiveKnob({ label, value, color, onChange, size='md' }) {
+const InteractiveKnob = React.memo(({ label, value, color, onChange, size='md' }) => {
   const [editing, setEditing] = useState(false);
   const [inputStr, setInputStr] = useState('');
   const dragging = useRef(false);
@@ -412,7 +412,9 @@ function InteractiveKnob({ label, value, color, onChange, size='md' }) {
       )}
     </div>
   );
-}
+}, (prev, next) => {
+  return prev.value === next.value && prev.color === next.color && prev.size === next.size && prev.label === next.label;
+});
 
 function SlideInPanel({ block, dbEntry, color, onClose, onParamChange, onToggleActive, onReset }) {
   const isOpen = !!block;
@@ -488,7 +490,7 @@ function SlideInPanel({ block, dbEntry, color, onClose, onParamChange, onToggleA
   );
 }
 
-function ChainBlock({ block, isSelected, onClick }) {
+const ChainBlock = React.memo(({ block, isSelected, onClick }) => {
   const col = FX_COLOR[block.cat]??FX_COLOR.EQ;
   return (
     <div className="flex items-center gap-1 flex-shrink-0">
@@ -502,7 +504,12 @@ function ChainBlock({ block, isSelected, onClick }) {
       <ChevronRight size={10} className="text-gray-500"/>
     </div>
   );
-}
+}, (prev, next) => {
+  return prev.isSelected === next.isSelected &&
+         prev.block.active === next.block.active &&
+         prev.block.model === next.block.model &&
+         prev.block.cat === next.block.cat;
+});
 
 function ModelBrowser({ onClose }) {
   const [q, setQ] = useState('');
@@ -711,6 +718,100 @@ function wizardGenerate({ artist, song, genres, gainIdx, brightIdx, spaceIdx, fx
   return {id,name,artist:artist||'Custom',song:song||'Wizard',tags:[gainName.toLowerCase().replace(' ','-'),...genres.slice(0,3)],pickup:['Neck (1st)','Neck Split (2nd)','Mid (3rd)','Bridge Split (4th)','Bridge HB'][Math.min(gainIdx+1,4)],rating:0,isAI:true,chain:chain.map((b,i)=>({...b,id:`${id}-${i}`}))};
 }
 
+function toneValidator(preset, genres) {
+  if (!preset) return preset;
+  
+  // Standardize genres to an array of lowercase strings
+  let genreArray = [];
+  if (Array.isArray(genres)) {
+    genreArray = genres.map(g => String(g).toLowerCase());
+  } else if (typeof genres === 'string') {
+    genreArray = genres.split(/[\s,]+/).map(g => g.toLowerCase());
+  }
+  
+  // 1. Detect genre categories
+  const isMetal = genreArray.some(g => g.includes('metal') || g.includes('djent') || g.includes('heavy'));
+  const isRock = genreArray.some(g => (g.includes('rock') || g.includes('classic') || g.includes('modern')) && !g.includes('j-rock') && !g.includes('j-pop'));
+  const isJRockPop = genreArray.some(g => g.includes('j-rock') || g.includes('j-pop') || g.includes('japanese') || g.includes('pop'));
+
+  // Find AMP block in signal chain
+  const ampBlock = preset.chain.find(b => b.cat === 'AMP');
+
+  // Standardize pickup first
+  const mapPickupToSelector = (pk) => {
+    const p = String(pk).toLowerCase();
+    if (p.includes('bridge hb') || p.includes('position 1') || p.includes('full bridge')) {
+      return 'Position 1: Full Bridge';
+    }
+    if (p.includes('bridge split') || p.includes('4th') || p.includes('position 2') || p.includes('inner coils')) {
+      return 'Position 2: Inner Coils';
+    }
+    if (p.includes('mid') || p.includes('3rd') || p.includes('position 3') || p.includes('both humbuckers')) {
+      return 'Position 3: Both Humbuckers';
+    }
+    if (p.includes('neck split') || p.includes('2nd') || p.includes('position 4') || p.includes('outer coils')) {
+      return 'Position 4: Outer Coils';
+    }
+    if (p.includes('neck (1st)') || p.includes('1st') || p.includes('position 5') || p.includes('full neck')) {
+      return 'Position 5: Full Neck';
+    }
+    return pk;
+  };
+
+  preset.pickup = mapPickupToSelector(preset.pickup);
+
+  if (isMetal) {
+    if (ampBlock) {
+      if (ampBlock.params.Gain < 75) ampBlock.params.Gain = 75;
+      if (ampBlock.params.Treble < 70) ampBlock.params.Treble = 70;
+      ampBlock.params.Presence = 72; // Lock Presence to 72
+      ampBlock.params.Mid = 35; // Scoop Middle to 35
+    }
+    preset.pickup = 'Position 1: Full Bridge';
+    
+    // Automatically turn ON the EQ module to ensure directness
+    const eqBlock = preset.chain.find(b => b.cat === 'EQ');
+    if (eqBlock) {
+      eqBlock.active = true;
+    }
+  } else if (isRock) {
+    if (ampBlock) {
+      if (ampBlock.params.Gain < 50 || ampBlock.params.Gain > 70) {
+        ampBlock.params.Gain = 60;
+      }
+      if (ampBlock.params.Mid < 60) ampBlock.params.Mid = 70;
+    }
+  } else if (isJRockPop) {
+    if (ampBlock) {
+      if (ampBlock.params.Gain > 50) ampBlock.params.Gain = 40;
+      if (ampBlock.params.Treble < 65) ampBlock.params.Treble = 65;
+    }
+    
+    // Switch to Position 2: Inner Coils
+    if (preset.pickup === 'Position 1: Full Bridge' || preset.pickup === 'Position 5: Full Neck') {
+      preset.pickup = 'Position 2: Inner Coils';
+    }
+    
+    // Volume compensation: Switch to Position 2 outputs lower volume, compensate with +12% volume on AMP (max 95)
+    if (preset.pickup === 'Position 2: Inner Coils' && ampBlock && ampBlock.params.Vol !== undefined) {
+      ampBlock.params.Vol = Math.min(95, Math.round(ampBlock.params.Vol * 1.12));
+    }
+    
+    // Delay and Reverb Mix parameter +15% but capped at 32 (only for J-Rock)
+    const isJRock = genreArray.some(g => g.includes('j-rock') || g.includes('jrock'));
+    if (isJRock) {
+      preset.chain.forEach(b => {
+        if ((b.cat === 'DLY' || b.cat === 'RVB') && b.params && b.params.Mix !== undefined) {
+          b.params.Mix = Math.min(32, Math.round(b.params.Mix * 1.15));
+        }
+      });
+    }
+  }
+
+  return preset;
+}
+
+
 function ToneWizardModal({ onClose, onSave }) {
   const [step,setStep]=useState(0);
   const [artist,setArtist]=useState(''), [song,setSong]=useState(''), [genres,setGenres]=useState([]);
@@ -720,7 +821,7 @@ function ToneWizardModal({ onClose, onSave }) {
   const [useCab,setUseCab]=useState(true);
   const toggleGenre=g=>setGenres(p=>p.includes(g)?p.filter(x=>x!==g):[...p,g]);
   const toggleFx=f=>setFxOn(p=>p.includes(f)?p.filter(x=>x!==f):[...p,f]);
-  const handleGenerate=()=>{ setResult(wizardGenerate({artist,song,genres,gainIdx,brightIdx,spaceIdx,fxOn,delayModel:fxOn.includes('delay')?delayModel:null,reverbModel:fxOn.includes('reverb')?reverbModel:null,useCab})); setStep(3); };
+  const handleGenerate=()=>{ const preset = wizardGenerate({artist,song,genres,gainIdx,brightIdx,spaceIdx,fxOn,delayModel:fxOn.includes('delay')?delayModel:null,reverbModel:fxOn.includes('reverb')?reverbModel:null,useCab}); const validatedPreset = toneValidator(preset, genres); setResult(validatedPreset); setStep(3); };
   const STEPS=['곡 정보','게인 & 사운드','이펙터','결과'];
   const ChoiceRow=({items,active,onSelect,color='#3b82f6'})=>(
     <div className="flex gap-1.5 flex-wrap">
@@ -865,6 +966,229 @@ function ToneWizardModal({ onClose, onSave }) {
   );
 }
 
+
+const ToneCloudHeader = React.memo(({ presetsLength, setShowBrowser, setShowExport }) => {
+  return (
+    <header className="flex items-center justify-between px-6 py-3 border-b border-[#303030] bg-[#111111] flex-shrink-0">
+      <div className="flex items-center gap-3">
+        <div className="bg-blue-600 p-1.5 rounded-lg shadow-lg shadow-blue-600/30"><Guitar size={16} className="text-white"/></div>
+        <div>
+          <h1 className="text-base font-black tracking-tight text-white leading-none">TONE CLOUD <span className="text-blue-500">GP-200JR</span></h1>
+          <p className="text-xs text-gray-400 uppercase tracking-[0.25em] mt-0.5">Schecter Sunset-6 Extreme · Valeton GP-200JR</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="hidden md:flex flex-col items-end text-xs leading-tight">
+          <span className="text-green-500 tracking-widest">● ONLINE</span>
+          <span className="text-gray-400">{presetsLength} PRESETS</span>
+        </div>
+        <button onClick={()=>setShowBrowser(true)} className="flex items-center gap-1.5 border border-[#404040] hover:border-blue-500/50 text-gray-500 hover:text-blue-400 px-3 py-1.5 rounded-lg text-[13px] font-bold transition-colors"><BookOpen size={11}/> MODEL DB</button>
+        <button onClick={()=>setShowExport(true)}  className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-[13px] font-black transition-colors"><Download size={11}/> EXPORT</button>
+      </div>
+    </header>
+  );
+}, (prev, next) => prev.presetsLength === next.presetsLength);
+
+const PresetSidebar = React.memo(({
+  presets,
+  activeId,
+  setActiveId,
+  setSelBlockId,
+  search,
+  setSearch,
+  activeTags,
+  toggleTag,
+  allTags
+}) => {
+  const filtered = presets.filter(p => {
+    const lq = search.toLowerCase();
+    return (!lq || p.name.toLowerCase().includes(lq) || p.artist.toLowerCase().includes(lq))
+        && (activeTags.length === 0 || activeTags.every(t => p.tags.includes(t)));
+  });
+  
+  return (
+    <aside className="w-60 flex-shrink-0 flex flex-col border-r border-[#2a2a2a] bg-[#111111] overflow-hidden">
+      <div className="p-3 border-b border-[#2a2a2a]">
+        <div className="relative">
+          <Search size={11} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/>
+          <input className="w-full bg-[#161616] border border-[#383838] rounded-lg pl-8 pr-3 py-2 text-sm text-gray-300 placeholder-gray-500 focus:outline-none focus:border-blue-600 transition-colors"
+            placeholder="SEARCH PRESETS..." value={search} onChange={e=>setSearch(e.target.value)}/>
+        </div>
+      </div>
+      <div className="p-3 border-b border-[#2a2a2a]">
+        <div className="flex items-center gap-1 mb-2"><Tag size={9} className="text-gray-400"/><span className="text-xs text-gray-400 uppercase tracking-widest">TAGS</span></div>
+        <div className="flex flex-wrap gap-1">
+          {allTags.map(tag=>(
+            <button key={tag} onClick={()=>toggleTag(tag)} className={`text-xs px-1.5 py-0.5 rounded-full border transition-all ${activeTags.includes(tag)?'bg-blue-600/20 border-blue-500/60 text-blue-400':'border-[#404040] text-gray-400 hover:border-gray-600'}`}>{tag}</button>
+          ))}
+        </div>
+      </div>
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-2 space-y-0.5">
+          <div className="text-xs text-gray-400 uppercase tracking-widest px-2 py-1">PRESETS ({filtered.length})</div>
+          {filtered.map(preset=>{
+            const isActive=preset.id===activeId;
+            return (
+              <button key={preset.id} onClick={()=>{setActiveId(preset.id);setSelBlockId(null);}} className={`w-full text-left px-2.5 py-2 rounded-lg transition-all ${isActive?'bg-blue-600/12 border border-blue-500/25':'border border-transparent hover:bg-[#0e0e0e]'}`}>
+                <div className="flex items-start justify-between gap-1">
+                  <div className="min-w-0">
+                    <div className={`text-sm font-bold truncate ${isActive?'text-blue-400':'text-gray-300'}`}>{preset.name}</div>
+                    <div className="text-xs text-gray-400 flex items-center gap-1 mt-0.5 truncate"><Music size={7}/>{preset.artist}</div>
+                  </div>
+                  <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
+                    {preset.isAI&&<Sparkles size={9} className="text-blue-500"/>}
+                    {preset.rating>0&&<Star size={9} className="text-yellow-500 fill-yellow-500"/>}
+                  </div>
+                </div>
+                <div className="flex items-center gap-0.5 mt-1.5 flex-wrap">
+                  {preset.chain.slice(0,5).map((b,i)=>{const c=FX_COLOR[b.cat]??FX_COLOR.EQ;return <span key={i} className="text-sm px-1 py-0.5 rounded" style={{background:c.bg,color:c.text,border:`1px solid ${c.border}33`}}>{b.cat}</span>;})}
+                  {preset.chain.length>5&&<span className="text-sm text-gray-400">+{preset.chain.length-5}</span>}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </aside>
+  );
+}, (prevProps, nextProps) => {
+  if (prevProps.activeId !== nextProps.activeId) return false;
+  if (prevProps.search !== nextProps.search) return false;
+  if (prevProps.activeTags.length !== nextProps.activeTags.length) return false;
+  if (prevProps.presets.length !== nextProps.presets.length) return false;
+  
+  // Custom comparison to check metadata changes only
+  for (let i = 0; i < prevProps.presets.length; i++) {
+    const p1 = prevProps.presets[i];
+    const p2 = nextProps.presets[i];
+    if (p1.id !== p2.id || p1.name !== p2.name || p1.artist !== p2.artist || p1.rating !== p2.rating || p1.isAI !== p2.isAI) {
+      return false;
+    }
+    if (p1.chain.length !== p2.chain.length) return false;
+    for (let j = 0; j < p1.chain.length; j++) {
+      if (p1.chain[j].cat !== p2.chain[j].cat || p1.chain[j].model !== p2.chain[j].model || p1.chain[j].active !== p2.chain[j].active) {
+        return false;
+      }
+    }
+  }
+  return true;
+});
+
+const ToneCloudFooter = React.memo(({
+  aiPreview,
+  aiQuery,
+  setAiQuery,
+  handleGenerate,
+  aiLoading,
+  setShowWizard,
+  useCab,
+  setUseCab,
+  saveAI,
+  setAiPreview
+}) => {
+  return (
+    <footer className="border-t border-[#2a2a2a] bg-[#111111] px-6 py-4 flex-shrink-0 space-y-4">
+      {aiPreview ? (
+        <div className="rounded-xl p-4 border bg-[#080f1c] border-[#3b82f630]">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Sparkles size={12} className="text-blue-400 animate-pulse"/>
+              <span className="text-sm font-bold text-white">{aiPreview.name}</span>
+              <span className="text-xs bg-blue-600/20 text-blue-400 px-1.5 py-0.5 rounded border border-blue-500/30">AI TONE</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={()=>setAiPreview(null)} className="flex items-center gap-1 text-[13px] text-gray-400 hover:text-gray-300 hover:border-gray-500 px-2.5 py-1.5 rounded-lg border border-[#404040] transition-colors"><X size={10}/> DISCARD</button>
+              <button onClick={saveAI} className="flex items-center gap-1.5 text-[13px] text-white bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded-lg font-bold transition-colors"><Save size={10}/> SAVE PRESET</button>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-1 overflow-x-auto pb-2.5 border-b border-[#1e293b]">
+            {aiPreview.chain.map((b,i)=>{const c=FX_COLOR[b.cat]??FX_COLOR.EQ;return(
+              <React.Fragment key={i}>
+                <div className="flex-shrink-0 min-w-[64px] text-center p-1.5 rounded-lg border" style={{background:c.bg,borderColor:`${c.border}40`}}>
+                  <div className="text-[10px] font-bold uppercase tracking-wider" style={{color:c.text}}>{FX_LABEL[b.cat]}</div>
+                  <div className="text-xs font-mono mt-0.5" style={{color:c.text+'cc'}}>{b.model}</div>
+                </div>
+                {i<aiPreview.chain.length-1&&<ChevronRight size={9} className="text-gray-500 flex-shrink-0"/>}
+              </React.Fragment>
+            );})}
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-3">
+            <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-1.5 bg-blue-600/10 border border-blue-500/30 px-2.5 py-1 rounded-lg">
+                <span className="text-[10px] text-blue-400 font-bold uppercase tracking-wider">추천 픽업</span>
+                <span className="text-xs font-black text-blue-300">{aiPreview.pickup}</span>
+              </div>
+              <span className="text-[11px] text-gray-500">Guitar: Schecter Sunset-6 Extreme</span>
+            </div>
+            
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-gray-500 font-mono">5-WAY SELECTOR:</span>
+              <div className="flex gap-1 bg-black/40 p-1 rounded-lg border border-[#1e293b]">
+                {[1, 2, 3, 4, 5].map((pos) => {
+                  const isActive = aiPreview.pickup.includes("Position " + pos) || (pos === 1 && aiPreview.pickup === 'Bridge HB') || (pos === 5 && aiPreview.pickup === 'Neck (1st)');
+                  return (
+                    <div key={pos} className={`w-7 h-5 rounded flex items-center justify-center text-[10px] font-black transition-all ${
+                      isActive 
+                        ? 'bg-blue-600 text-white shadow-[0_0_8px_rgba(37,99,235,0.6)]' 
+                        : 'text-gray-600 hover:text-gray-400'
+                    }`} title={`Position ${pos}`}>
+                      P${pos}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Sparkles size={13} className="text-blue-500"/>
+              <span className="text-xs text-gray-400 uppercase tracking-widest hidden sm:block">AI TONE</span>
+            </div>
+            <input className="flex-1 bg-[#161616] border border-[#383838] rounded-xl px-4 py-2.5 text-xs text-gray-300 placeholder-gray-500 focus:outline-none focus:border-blue-600 transition-colors"
+              placeholder="아티스트 입력 (HigeDan / Vaundy / YOASOBI / Metallica…)"
+              value={aiQuery} onChange={e=>setAiQuery(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleGenerate()}/>
+            <button onClick={handleGenerate} disabled={aiLoading||!aiQuery.trim()}
+              className="flex items-center gap-2 bg-white hover:bg-blue-400 disabled:opacity-30 text-black px-4 py-2.5 rounded-xl text-xs font-black transition-colors flex-shrink-0">
+              {aiLoading?<div className="w-3.5 h-3.5 border-2 border-black/30 border-t-black rounded-full animate-spin"/>:<Zap size={13} fill="currentColor"/>}
+              ANALYZE
+            </button>
+            <div className="h-7 w-px bg-[#1e1e1e] flex-shrink-0"/>
+            <button onClick={()=>setShowWizard(true)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black flex-shrink-0 transition-all hover:scale-105"
+              style={{background:'linear-gradient(135deg,#6d28d9,#4c1d95)',color:'white',boxShadow:'0 0 12px #7c3aed44'}}>
+              <span className="text-sm leading-none">🎛</span> CUSTOM BUILDER
+            </button>
+          </div>
+        </>
+      )}
+
+      <div className="flex items-center justify-between pt-3 border-t border-[#1f1f1f] text-xs">
+        <div className="flex items-center gap-2 text-gray-500">
+          <span className="w-2 h-2 rounded-full bg-blue-500/85"/>
+          <span>Guitar Model: <strong>Schecter Sunset-6 Extreme</strong> (Fixed)</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-[11px] text-gray-400 font-bold uppercase tracking-widest">OUTPUT MODE</span>
+          <div className="flex bg-[#161616] p-0.5 rounded-lg border border-[#2a2a2a]">
+            <button onClick={()=>setUseCab(true)} className={`px-3 py-1.5 rounded-md text-[10px] font-bold transition-all ${useCab?'bg-blue-600 text-white shadow-sm':'text-gray-500 hover:text-gray-300'}`}>Direct / Mixer (CAB ON)</button>
+            <button onClick={()=>setUseCab(false)} className={`px-3 py-1.5 rounded-md text-[10px] font-bold transition-all ${!useCab?'bg-blue-600 text-white shadow-sm':'text-gray-500 hover:text-gray-300'}`}>Amp Return (CAB OFF)</button>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+}, (prev, next) => {
+  return prev.aiPreview === next.aiPreview &&
+         prev.aiQuery === next.aiQuery &&
+         prev.aiLoading === next.aiLoading &&
+         prev.useCab === next.useCab;
+});
+
 function ToneCloudApp() {
   const [presets,setPresets]=useState(INITIAL_PRESETS);
   const [activeId,setActiveId]=useState('1');
@@ -878,6 +1202,97 @@ function ToneCloudApp() {
   const [showBrowser,setShowBrowser]=useState(false);
   const [showExport,setShowExport]=useState(false);
   const [showWizard,setShowWizard]=useState(false);
+
+  useEffect(() => {
+    // 1. Sync active preset CAB block state with useCab
+    setPresets(prev => {
+      const activePreset = prev.find(p => p.id === activeId);
+      if (!activePreset) return prev;
+      
+      const cabBlock = activePreset.chain.find(b => b.cat === 'CAB');
+      const hasCab = !!cabBlock;
+      const cabActive = cabBlock?.active;
+      
+      if (useCab && hasCab && cabActive === true) return prev;
+      if (!useCab && (!hasCab || cabActive === false)) return prev;
+      
+      return prev.map(p => {
+        if (p.id !== activeId) return p;
+        if (useCab) {
+          if (hasCab) {
+            return {
+              ...p,
+              chain: p.chain.map(b => b.cat === 'CAB' ? { ...b, active: true } : b)
+            };
+          } else {
+            const ampIdx = p.chain.findIndex(b => b.cat === 'AMP');
+            const newCab = {
+              id: `${p.id}-cab-${Date.now()}`,
+              cat: 'CAB',
+              model: '4x12 V30',
+              active: true,
+              params: { HiCut: 50, LoCut: 40, Mix: 100 }
+            };
+            const newChain = [...p.chain];
+            if (ampIdx !== -1) {
+              newChain.splice(ampIdx + 1, 0, newCab);
+            } else {
+              newChain.push(newCab);
+            }
+            return { ...p, chain: newChain };
+          }
+        } else {
+          return {
+            ...p,
+            chain: p.chain.map(b => b.cat === 'CAB' ? { ...b, active: false } : b)
+          };
+        }
+      });
+    });
+
+    // 2. Sync aiPreview CAB block state with useCab
+    if (aiPreview) {
+      const cabBlock = aiPreview.chain.find(b => b.cat === 'CAB');
+      const hasCab = !!cabBlock;
+      const cabActive = cabBlock?.active;
+      
+      const needsSync = (useCab && (!hasCab || cabActive === false)) || (!useCab && hasCab && cabActive === true);
+      if (needsSync) {
+        setAiPreview(prev => {
+          if (!prev) return prev;
+          if (useCab) {
+            if (hasCab) {
+              return {
+                ...prev,
+                chain: prev.chain.map(b => b.cat === 'CAB' ? { ...b, active: true } : b)
+              };
+            } else {
+              const ampIdx = prev.chain.findIndex(b => b.cat === 'AMP');
+              const newCab = {
+                id: `${prev.id}-cab-${Date.now()}`,
+                cat: 'CAB',
+                model: '4x12 V30',
+                active: true,
+                params: { HiCut: 50, LoCut: 40, Mix: 100 }
+              };
+              const newChain = [...prev.chain];
+              if (ampIdx !== -1) {
+                newChain.splice(ampIdx + 1, 0, newCab);
+              } else {
+                newChain.push(newCab);
+              }
+              return { ...prev, chain: newChain };
+            }
+          } else {
+            return {
+              ...prev,
+              chain: prev.chain.map(b => b.cat === 'CAB' ? { ...b, active: false } : b)
+            };
+          }
+        });
+      }
+    }
+  }, [useCab, activeId, aiPreview]);
 
   const active   = presets.find(p=>p.id===activeId)??presets[0];
   const selBlock = active?.chain.find(b=>b.id===selBlockId)??null;
@@ -939,7 +1354,8 @@ function ToneCloudApp() {
       preset.isAI = true;
       preset.id = `ai-${Date.now()}`;
       
-      setAiPreview(preset);
+      const validatedPreset = toneValidator(preset, combinedTags);
+      setAiPreview(validatedPreset);
     } catch (e) {
       console.error(e);
       alert('아티스트 분석 중 오류가 발생했습니다.');
@@ -963,68 +1379,20 @@ function ToneCloudApp() {
         onClose={()=>setSelBlockId(null)} onParamChange={(key,val)=>updateParam(selBlock.id,key,val)}
         onToggleActive={()=>toggleBlockActive(selBlock.id)} onReset={()=>resetBlockParams(selBlock.id)}/>
 
-      <header className="flex items-center justify-between px-6 py-3 border-b border-[#303030] bg-[#111111] flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="bg-blue-600 p-1.5 rounded-lg shadow-lg shadow-blue-600/30"><Guitar size={16} className="text-white"/></div>
-          <div>
-            <h1 className="text-base font-black tracking-tight text-white leading-none">TONE CLOUD <span className="text-blue-500">GP-200JR</span></h1>
-            <p className="text-xs text-gray-400 uppercase tracking-[0.25em] mt-0.5">Schecter Sunset-6 Extreme · Valeton GP-200JR</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="hidden md:flex flex-col items-end text-xs leading-tight">
-            <span className="text-green-500 tracking-widest">● ONLINE</span>
-            <span className="text-gray-400">{presets.length} PRESETS</span>
-          </div>
-          <button onClick={()=>setShowBrowser(true)} className="flex items-center gap-1.5 border border-[#404040] hover:border-blue-500/50 text-gray-500 hover:text-blue-400 px-3 py-1.5 rounded-lg text-[13px] font-bold transition-colors"><BookOpen size={11}/> MODEL DB</button>
-          <button onClick={()=>setShowExport(true)}  className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-[13px] font-black transition-colors"><Download size={11}/> EXPORT</button>
-        </div>
-      </header>
+      <ToneCloudHeader presetsLength={presets.length} setShowBrowser={setShowBrowser} setShowExport={setShowExport} />
 
       <div className="flex flex-1 overflow-hidden">
-        <aside className="w-60 flex-shrink-0 flex flex-col border-r border-[#2a2a2a] bg-[#111111] overflow-hidden">
-          <div className="p-3 border-b border-[#2a2a2a]">
-            <div className="relative">
-              <Search size={11} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"/>
-              <input className="w-full bg-[#161616] border border-[#383838] rounded-lg pl-8 pr-3 py-2 text-sm text-gray-300 placeholder-gray-500 focus:outline-none focus:border-blue-600 transition-colors"
-                placeholder="SEARCH PRESETS..." value={search} onChange={e=>setSearch(e.target.value)}/>
-            </div>
-          </div>
-          <div className="p-3 border-b border-[#2a2a2a]">
-            <div className="flex items-center gap-1 mb-2"><Tag size={9} className="text-gray-400"/><span className="text-xs text-gray-400 uppercase tracking-widest">TAGS</span></div>
-            <div className="flex flex-wrap gap-1">
-              {allTags.map(tag=>(
-                <button key={tag} onClick={()=>toggleTag(tag)} className={`text-xs px-1.5 py-0.5 rounded-full border transition-all ${activeTags.includes(tag)?'bg-blue-600/20 border-blue-500/60 text-blue-400':'border-[#404040] text-gray-400 hover:border-gray-600'}`}>{tag}</button>
-              ))}
-            </div>
-          </div>
-          <div className="flex-1 overflow-y-auto">
-            <div className="p-2 space-y-0.5">
-              <div className="text-xs text-gray-400 uppercase tracking-widest px-2 py-1">PRESETS ({filtered.length})</div>
-              {filtered.map(preset=>{
-                const isActive=preset.id===activeId;
-                return (
-                  <button key={preset.id} onClick={()=>{setActiveId(preset.id);setSelBlockId(null);}} className={`w-full text-left px-2.5 py-2 rounded-lg transition-all ${isActive?'bg-blue-600/12 border border-blue-500/25':'border border-transparent hover:bg-[#0e0e0e]'}`}>
-                    <div className="flex items-start justify-between gap-1">
-                      <div className="min-w-0">
-                        <div className={`text-sm font-bold truncate ${isActive?'text-blue-400':'text-gray-300'}`}>{preset.name}</div>
-                        <div className="text-xs text-gray-400 flex items-center gap-1 mt-0.5 truncate"><Music size={7}/>{preset.artist}</div>
-                      </div>
-                      <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
-                        {preset.isAI&&<Sparkles size={9} className="text-blue-500"/>}
-                        {preset.rating>0&&<Star size={9} className="text-yellow-500 fill-yellow-500"/>}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-0.5 mt-1.5 flex-wrap">
-                      {preset.chain.slice(0,5).map((b,i)=>{const c=FX_COLOR[b.cat]??FX_COLOR.EQ;return <span key={i} className="text-sm px-1 py-0.5 rounded" style={{background:c.bg,color:c.text,border:`1px solid ${c.border}33`}}>{b.cat}</span>;})}
-                      {preset.chain.length>5&&<span className="text-sm text-gray-400">+{preset.chain.length-5}</span>}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </aside>
+        <PresetSidebar 
+          presets={presets}
+          activeId={activeId}
+          setActiveId={setActiveId}
+          setSelBlockId={setSelBlockId}
+          search={search}
+          setSearch={setSearch}
+          activeTags={activeTags}
+          toggleTag={toggleTag}
+          allTags={allTags}
+        />
 
         <main className="flex-1 flex flex-col overflow-hidden">
           <div className="px-6 py-4 border-b border-[#2a2a2a] flex-shrink-0">
@@ -1093,63 +1461,18 @@ function ToneCloudApp() {
         </main>
       </div>
 
-      <footer className="border-t border-[#2a2a2a] bg-[#111111] px-6 py-3.5 flex-shrink-0">
-        {aiPreview ? (
-          <div className="rounded-xl p-3.5 border" style={{background:'#080f1c',borderColor:'#3b82f630'}}>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Sparkles size={12} className="text-blue-400"/>
-                <span className="text-sm font-bold text-white">{aiPreview.name}</span>
-                <span className="text-xs bg-blue-600/20 text-blue-400 px-1.5 py-0.5 rounded border border-blue-500/30">AI · GP-200JR</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <button onClick={()=>setAiPreview(null)} className="flex items-center gap-1 text-[13px] text-gray-400 hover:text-gray-400 px-2.5 py-1.5 rounded-lg border border-[#404040]"><X size={10}/> DISCARD</button>
-                <button onClick={saveAI} className="flex items-center gap-1.5 text-[13px] text-white bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded-lg font-bold"><Save size={10}/> SAVE PRESET</button>
-              </div>
-            </div>
-            <div className="flex items-center gap-1 overflow-x-auto">
-              {aiPreview.chain.map((b,i)=>{const c=FX_COLOR[b.cat]??FX_COLOR.EQ;return(
-                <React.Fragment key={i}>
-                  <div className="flex-shrink-0 min-w-[64px] text-center p-1.5 rounded-lg border" style={{background:c.bg,borderColor:`${c.border}40`}}>
-                    <div className="text-sm font-bold uppercase" style={{color:c.text}}>{FX_LABEL[b.cat]}</div>
-                    <div className="text-sm mt-0.5" style={{color:c.text+'99'}}>{b.model}</div>
-                  </div>
-                  {i<aiPreview.chain.length-1&&<ChevronRight size={9} className="text-gray-500 flex-shrink-0"/>}
-                </React.Fragment>
-              );})}
-            </div>
-          </div>
-                ) : (
-          <>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <Sparkles size={13} className="text-blue-500"/>
-                <span className="text-xs text-gray-400 uppercase tracking-widest hidden sm:block">AI TONE</span>
-              </div>
-              <input className="flex-1 bg-[#161616] border border-[#383838] rounded-xl px-4 py-2.5 text-xs text-gray-300 placeholder-gray-500 focus:outline-none focus:border-blue-600 transition-colors"
-                placeholder="아티스트 입력 (HigeDan / Vaundy / YOASOBI / Metallica…)"
-                value={aiQuery} onChange={e=>setAiQuery(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleGenerate()}/>
-              <button onClick={handleGenerate} disabled={aiLoading||!aiQuery.trim()}
-                className="flex items-center gap-2 bg-white hover:bg-blue-400 disabled:opacity-30 text-black px-4 py-2.5 rounded-xl text-xs font-black transition-colors flex-shrink-0">
-                {aiLoading?<div className="w-3.5 h-3.5 border-2 border-black/30 border-t-black rounded-full animate-spin"/>:<Zap size={13} fill="currentColor"/>}
-                ANALYZE
-              </button>
-              <div className="h-7 w-px bg-[#1e1e1e] flex-shrink-0"/>
-              <button onClick={()=>setShowWizard(true)}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black flex-shrink-0 transition-all hover:scale-105"
-                style={{background:'linear-gradient(135deg,#6d28d9,#4c1d95)',color:'white',boxShadow:'0 0 12px #7c3aed44'}}>
-                <span className="text-sm leading-none">✨</span> CUSTOM BUILDER
-              </button>
-            </div>
-
-            <div className="flex items-center justify-center gap-4 mt-4">
-              <span className="text-[11px] text-gray-500 font-bold uppercase tracking-widest">OUTPUT MODE</span>
-              <button onClick={()=>setUseCab(true)} className={`px-3 py-1.5 rounded-lg border text-[11px] font-bold transition-all ${useCab?'bg-blue-600/20 border-blue-500 text-blue-400':'bg-transparent border-[#333] text-gray-500 hover:text-gray-400'}`}>Direct / Mixer (CAB ON)</button>
-              <button onClick={()=>setUseCab(false)} className={`px-3 py-1.5 rounded-lg border text-[11px] font-bold transition-all ${!useCab?'bg-blue-600/20 border-blue-500 text-blue-400':'bg-transparent border-[#333] text-gray-500 hover:text-gray-400'}`}>Amp Return (CAB OFF)</button>
-            </div>
-          </>
-        )}
-      </footer>
+      <ToneCloudFooter 
+        aiPreview={aiPreview}
+        aiQuery={aiQuery}
+        setAiQuery={setAiQuery}
+        handleGenerate={handleGenerate}
+        aiLoading={aiLoading}
+        setShowWizard={setShowWizard}
+        useCab={useCab}
+        setUseCab={setUseCab}
+        saveAI={saveAI}
+        setAiPreview={setAiPreview}
+      />
     </div>
   );
 }
